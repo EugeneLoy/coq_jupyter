@@ -3,7 +3,7 @@ import pexpect
 from ipykernel.kernelbase import Kernel
 
 INITIAL_PROMPT = ".*Coq\s\<\s"
-PROMPT = "[^\s]+\s\<\s" # TODO add match for newline here
+PROMPT = "([^\s]+)\s\<\s" # TODO add match for newline here
 
 class CoqKernel(Kernel):
     # TODO tweak the following fields:
@@ -33,6 +33,11 @@ class CoqKernel(Kernel):
             self._coqtop.sendline(line)
             self._coqtop.expect(PROMPT, None)
             outputs.append(self._coqtop.before);
+
+        # Parse "proving" context from prompt
+        prompt_context = self._coqtop.match.group(1)
+        if prompt_context != u"Coq":
+            outputs.append(u"Proving: {}".format(prompt_context))
 
         return u"\n".join(outputs);
 
