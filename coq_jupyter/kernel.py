@@ -18,11 +18,15 @@ class CoqKernel(Kernel):
     implementation = 'coq'
     implementation_version = __version__
     language = 'coq'
-    language_info = {
-        'name': 'coq',
-        'mimetype': 'text/coq',
-        'file_extension': '.v',
-    }
+
+    @property
+    def language_info(self):
+        return {
+            'name': 'coq',
+            'mimetype': 'text/coq',
+            'file_extension': '.v',
+            'version': self.language_version
+        }
 
     _banner = None
 
@@ -70,11 +74,11 @@ class CoqKernel(Kernel):
         try:
             result = self._eval(code)
 
-            stream_content = {
-                'name': 'stdout',
-                'text': result
-            }
-            self.send_response(self.iopub_socket, 'stream', stream_content)
+            self.send_response(self.iopub_socket, 'execute_result', {
+                'data': { 'text/plain': result },
+                'metadata': {},
+                'execution_count': self.execution_count # TODO check if this belongs here
+            })
 
             return {
                 'status': 'ok',
