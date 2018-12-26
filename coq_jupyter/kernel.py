@@ -1,22 +1,41 @@
 import pexpect
+import re
 
 from ipykernel.kernelbase import Kernel
+from subprocess import check_output
 
-INITIAL_PROMPT = ".*Coq\s\<\s"
-PROMPT = "([^\s]+)\s\<\s" # TODO add match for newline here
+
+__version__ = '1.0.0'
+
+INITIAL_PROMPT = u".*Coq\s\<\s"
+PROMPT = u"([^\s]+)\s\<\s" # TODO add match for newline here
+
+LANGUAGE_VERSION_PATTERN = re.compile(r'version (\d+(\.\d+)+)')
+
 
 class CoqKernel(Kernel):
     # TODO tweak the following fields:
-    implementation = 'Coq'
-    implementation_version = '1.0'
+    implementation = 'coq'
+    implementation_version = __version__
     language = 'coq'
-    language_version = '1.0'
     language_info = {
         'name': 'coq',
         'mimetype': 'text/coq',
         'file_extension': '.v',
     }
-    banner = "Coq kernel"
+
+    _banner = None
+
+    @property
+    def banner(self):
+        if self._banner is None:
+            self._banner = check_output(['coqtop', '--version']).decode('utf-8')
+        return self._banner
+
+    @property
+    def language_version(self):
+        return LANGUAGE_VERSION_PATTERN.search(self.banner).group(1)
+
 
     def __init__(self, **kwargs):
         Kernel.__init__(self, **kwargs)
@@ -69,7 +88,7 @@ class CoqKernel(Kernel):
                 'execution_count': self.execution_count
             }
 
-
+# This entry point is used for debug only:
 if __name__ == '__main__':
     from ipykernel.kernelapp import IPKernelApp
     IPKernelApp.launch_instance(kernel_class=CoqKernel)

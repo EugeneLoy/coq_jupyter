@@ -1,5 +1,0 @@
-{
-  "argv": ["python3", "/home/jovyan/.local/share/jupyter/kernels/coq-jupyter/coqkernel.py", "-f", "{connection_file}"],
-  "display_name": "Coq",
-  "language": "coq"
-}
