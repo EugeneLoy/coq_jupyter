@@ -1,0 +1,25 @@
+os: linux
+
+dist: xenial
+
+language: generic
+
+env:
+  - PYTHON_VERSION=3
+  - PYTHON_VERSION=2
+
+install:
+  - sudo apt-get update
+  - sudo apt-get install -y coq python3-pip
+  - if [ $PYTHON_VERSION = 2 ]; then sudo apt-get install -y coq python-pip; fi
+  - pip3 install --user setuptools wheel
+  - pip3 install --user --upgrade 'jupyter_kernel_test>=0.3'
+  
+script:
+  - python3 setup.py sdist bdist_wheel
+  - if [ $PYTHON_VERSION = 3 ]; then pip3 install --user --upgrade --force-reinstall dist/coq_jupyter-*.tar.gz; fi
+  - if [ $PYTHON_VERSION = 3 ]; then python3 -m coq_jupyter.install; fi
+  - if [ $PYTHON_VERSION = 2 ]; then pip install --user --upgrade --force-reinstall dist/coq_jupyter-*.tar.gz; fi
+  - if [ $PYTHON_VERSION = 2 ]; then python -m coq_jupyter.install; fi
+  - python3 test/kernel_test.py
+
