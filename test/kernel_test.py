@@ -7,13 +7,6 @@ class KernelTests(jupyter_kernel_test.KernelTests):
     kernel_name = "coq"
     language_name = "coq"
 
-    # Used by tests inherited from jupyter_kernel_test.KernelTests:
-    code_execute_result = [{
-        'code': 'Check True.',
-        'result': '\x1b[92;49;22;23;24;27mTrue\x1b[39;49;22;23;24;27m\r\n     : \x1b[33;49;1;23;24;27mProp\x1b[39;49;22;23;24;27m\r\n\r\n'
-    }]
-
-    # Custom tests:
     def test_coq_jupyter_execute_one_line(self):
         self.flush_channels()
         reply, output_msgs = self.execute_helper(code='Check True.')
