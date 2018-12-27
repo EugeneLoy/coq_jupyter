@@ -14,7 +14,6 @@ LANGUAGE_VERSION_PATTERN = re.compile(r'version (\d+(\.\d+)+)')
 
 
 class CoqKernel(Kernel):
-    # TODO tweak the following fields:
     implementation = 'coq'
     implementation_version = __version__
     language = 'coq'
@@ -69,28 +68,36 @@ class CoqKernel(Kernel):
         # self._coqtop.expect("[^\s]+\s\<\s", None)
         # return self._coqtop.before
 
+    def _build_ok_content(self):
+        return {
+            'status': 'ok',
+            'execution_count': self.execution_count,
+            'payload': [],
+            'user_expressions': {},
+        }
+
+    def _build_error_content(self, e):
+        return {
+            'status': 'error',
+            'ename' : type(e).__name__,
+            'evalue' : repr(e), #TODO
+            'traceback' : [] # TODO
+        }
+
+    def _send_execute_result(self, text):
+        self.send_response(self.iopub_socket, 'execute_result', {
+            'data': { 'text/plain': text },
+            'metadata': {},
+            'execution_count': self.execution_count
+        })
 
     def do_execute(self, code, silent, store_history=True, user_expressions=None, allow_stdin=False):
         try:
             result = self._eval(code)
-
-            self.send_response(self.iopub_socket, 'execute_result', {
-                'data': { 'text/plain': result },
-                'metadata': {},
-                'execution_count': self.execution_count # TODO check if this belongs here
-            })
-
-            return {
-                'status': 'ok',
-                'execution_count': self.execution_count,
-                'payload': [],
-                'user_expressions': {},
-            }
+            self._send_execute_result(result)
+            return self._build_ok_content()
         except Exception as e:
-            return {
-                'status': 'abort',
-                'execution_count': self.execution_count
-            }
+            return self._build_error_content(e)
 
 # This entry point is used for debug only:
 if __name__ == '__main__':
