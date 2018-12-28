@@ -23,7 +23,7 @@ setup(
         'License :: OSI Approved :: Apache Software License',
         'Programming Language :: Python :: 2',
         'Programming Language :: Python :: 3',
-        'Operating System :: POSIX :: Linux'
+        'Operating System :: POSIX :: Linux',
         'Framework :: Jupyter',
         'Intended Audience :: Education',
         'Intended Audience :: Developers',
