@@ -19,6 +19,15 @@ setup(
         'pexpect>=4.0'
     ],
     classifiers=[
-        'Intended Audience :: Developers' # TODO
+        'Development Status :: 4 - Beta',
+        'License :: OSI Approved :: Apache Software License',
+        'Programming Language :: Python :: 2',
+        'Programming Language :: Python :: 3',
+        'Operating System :: POSIX :: Linux'
+        'Framework :: Jupyter',
+        'Intended Audience :: Education',
+        'Intended Audience :: Developers',
+        'Intended Audience :: Science/Research',
+        'Topic :: Software Development'
     ],
 )
