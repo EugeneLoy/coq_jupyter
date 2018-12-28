@@ -1,7 +1,8 @@
 from setuptools import setup
 
-with open('README.md') as f:
-    readme = f.read()
+readme = """Jupyter kernel for Coq.
+See: https://github.com/EugeneLoy/coq_jupyter
+"""
 
 setup(
     name='coq_jupyter',
