@@ -93,13 +93,13 @@ class CoqKernel(Kernel):
 
     def do_execute(self, code, silent, store_history=True, user_expressions=None, allow_stdin=False):
         try:
-            self.log.info("Processing 'execute_request', code: \n{}\n".format(code))
+            self.log.info("Processing 'execute_request', code: \n{}\n".format(repr(code)))
             result = self._eval(code)
-            self.log.info("Sending 'execute_result', evaluation result: \n{}\n".format(result))
+            self.log.info("Sending 'execute_result', evaluation result: \n{}\n".format(repr(result)))
             self._send_execute_result(result)
             return self._build_ok_content()
         except Exception as e:
-            self.log.exception("Error during evaluating code: \n'{}'\n".format(code))
+            self.log.exception("Error during evaluating code: \n'{}'\n".format(repr(code)))
             return self._build_error_content(e)
 
 # This entry point is used for debug only:
