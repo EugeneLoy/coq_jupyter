@@ -1,11 +1,19 @@
-To run kernel from source with INFO logging:
+To run kernel from source (with DEBUG logging level):
 
-    python -m pip install --user jupyter-console
-    python coq_jupyter/kernel.py --ConnectionFileMixin.connection_file=coq_kernel.json --Application.log_level=INFO
+    pip install --user jupyter-console
+    python coq_jupyter/kernel.py --ConnectionFileMixin.connection_file=coq_kernel.json --Application.log_level=DEBUG
 
 ... and then connect to kernel using:
 
     jupyter console --existing coq_kernel.json
+
+
+To test (this also installs kernel from source):
+
+    pip install --user --upgrade setuptools jupyter_kernel_test>=0.3
+    python setup.py install --user
+    python -m coq_jupyter.install
+    python test/kernel_test.py
 
 
 To build:
