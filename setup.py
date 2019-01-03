@@ -13,6 +13,7 @@ setup(
     author='Eugene Loy',
     author_email='eugeny.loy@gmail.com',
     url='https://github.com/EugeneLoy/coq_jupyter',
+    include_package_data=True,
     install_requires=[
         'jupyter_client',
         'IPython',

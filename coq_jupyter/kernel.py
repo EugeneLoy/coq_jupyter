@@ -23,7 +23,7 @@ class CoqKernel(Kernel):
     def language_info(self):
         return {
             'name': 'coq',
-            'mimetype': 'text/coq',
+            'mimetype': 'text/x-coq',
             'file_extension': '.v',
             'version': self.language_version
         }
