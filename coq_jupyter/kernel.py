@@ -122,10 +122,10 @@ class CoqKernel(Kernel):
 
     def _render_cell_output(self, raw_outputs, footer_message):
         cell_output = u"\n".join(raw_outputs)
-        cell_output = cell_output.rstrip(u"\n\r\t ")
+        cell_output = cell_output.rstrip(u"\n\r\t ").lstrip(u"\n\r")
 
         if footer_message is not None:
-            cell_output += "\n" + footer_message
+            cell_output += "\n\n" + footer_message
 
         return cell_output
 
