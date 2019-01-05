@@ -6,7 +6,7 @@ from ipykernel.kernelbase import Kernel
 from subprocess import check_output
 from operator import itemgetter
 
-__version__ = '1.1.0'
+__version__ = '1.2.0'
 
 PROMPT = u"\<prompt\>.+?\s\<\s(?P<state_label>\d+)\s\|(?P<proving>.*?)\|\s\d+\s\<\s\<\/prompt\>"
 
