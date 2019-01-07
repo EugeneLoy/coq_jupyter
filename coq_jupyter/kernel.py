@@ -14,44 +14,17 @@ LANGUAGE_VERSION_PATTERN = re.compile(r'version (\d+(\.\d+)+)')
 ANSI_ESCAPE_PATTERN = re.compile(r'(\x9B|\x1B\[)[0-?]*[ -/]*[@-~]') # see: https://stackoverflow.com/a/38662876/576549
 
 
-class CoqKernel(Kernel):
-    implementation = 'coq'
-    implementation_version = __version__
-    language = 'coq'
-
-    @property
-    def language_info(self):
-        return {
-            'name': 'coq',
-            'mimetype': 'text/x-coq',
-            'file_extension': '.v',
-            'version': self.language_version
-        }
-
-    _banner = None
-
-    @property
-    def banner(self):
-        if self._banner is None:
-            self._banner = check_output(['coqtop', '--version']).decode('utf-8')
-        return self._banner
-
-    @property
-    def language_version(self):
-        return LANGUAGE_VERSION_PATTERN.search(self.banner).group(1)
+class CoqtopWrapper:
 
     _state_labbel = None
 
-    def __init__(self, **kwargs):
-        Kernel.__init__(self, **kwargs)
-        self._start_coqtop()
-
-    def _start_coqtop(self):
+    def __init__(self, kernel):
+        self.log = kernel.log # TODO
         self._coqtop = pexpect.spawn(u"coqtop -emacs -quiet", echo=False, encoding=u"utf-8")
         self._state_labbel = "1"
-        self._eval(u"(* dummy init command *)")
+        self.eval(u"(* dummy init command *)")
 
-    def _eval(self, code):
+    def eval(self, code):
         rollback_state_label = self._state_labbel
         checkpoint_marker_lhs = random.randint(0, 499)
         checkpoint_marker_rhs = random.randint(0, 499)
@@ -99,7 +72,7 @@ class CoqKernel(Kernel):
 
                 raw_outputs.append(simplified_output)
 
-            return self._render_cell_output(raw_outputs, footer_message)
+            return (raw_outputs, footer_message)
 
         # rollback issued hidden commands
         # TODO not 100% sure if this rollback is really needed. Leave it for now.
@@ -118,16 +91,7 @@ class CoqKernel(Kernel):
         else:
             footer_message = None
 
-        return self._render_cell_output(raw_outputs, footer_message)
-
-    def _render_cell_output(self, raw_outputs, footer_message):
-        cell_output = u"\n".join(raw_outputs)
-        cell_output = cell_output.rstrip(u"\n\r\t ").lstrip(u"\n\r")
-
-        if footer_message is not None:
-            cell_output += "\n\n" + footer_message
-
-        return cell_output
+        return (raw_outputs, footer_message)
 
     def _expect_coqtop_prompt(self):
         self.log.debug(u"expecting coqtop prompt")
@@ -168,6 +132,53 @@ class CoqKernel(Kernel):
 
         return False
 
+
+class CoqKernel(Kernel):
+    implementation = 'coq'
+    implementation_version = __version__
+    language = 'coq'
+
+    @property
+    def language_info(self):
+        return {
+            'name': 'coq',
+            'mimetype': 'text/x-coq',
+            'file_extension': '.v',
+            'version': self.language_version
+        }
+
+    _banner = None
+
+    @property
+    def banner(self):
+        if self._banner is None:
+            self._banner = check_output(['coqtop', '--version']).decode('utf-8')
+        return self._banner
+
+    @property
+    def language_version(self):
+        return LANGUAGE_VERSION_PATTERN.search(self.banner).group(1)
+
+
+    def __init__(self, **kwargs):
+        Kernel.__init__(self, **kwargs)
+        self._coqtop = CoqtopWrapper(self)
+
+    def do_execute(self, code, silent, store_history=True, user_expressions=None, allow_stdin=False):
+        try:
+            self.log.info(u"Processing 'execute_request', code: \n{}\n".format(repr(code)))
+            if code.strip(u"\n\r\t ") != u"":
+                result = self._coqtop.eval(code)
+                self.log.info(u"Sending 'execute_result', evaluation result: \n{}\n".format(repr(result)))
+                self._send_execute_result(*result)
+            else:
+                self.log.info(u"code is empty - skipping evaluation and sending results.")
+
+            return self._build_ok_content()
+        except Exception as e:
+            self.log.exception(u"Error during evaluating code: \n'{}'\n".format(repr(code)))
+            return self._build_error_content(e)
+
     def _build_ok_content(self):
         return {
             'status': 'ok',
@@ -184,27 +195,23 @@ class CoqKernel(Kernel):
             'traceback' : [] # TODO
         }
 
-    def _send_execute_result(self, text):
+    def _send_execute_result(self, raw_outputs, footer_message):
+        text = self._render_text_result(raw_outputs, footer_message)
         self.send_response(self.iopub_socket, 'execute_result', {
             'data': { 'text/plain': text },
             'metadata': {},
             'execution_count': self.execution_count
         })
 
-    def do_execute(self, code, silent, store_history=True, user_expressions=None, allow_stdin=False):
-        try:
-            self.log.info(u"Processing 'execute_request', code: \n{}\n".format(repr(code)))
-            if code.strip(u"\n\r\t ") != u"":
-                result = self._eval(code)
-                self.log.info(u"Sending 'execute_result', evaluation result: \n{}\n".format(repr(result)))
-                self._send_execute_result(result)
-            else:
-                self.log.info(u"code is empty - skipping evaluation and sending results.")
+    def _render_text_result(self, raw_outputs, footer_message):
+        cell_output = u"\n".join(raw_outputs)
+        cell_output = cell_output.rstrip(u"\n\r\t ").lstrip(u"\n\r")
 
-            return self._build_ok_content()
-        except Exception as e:
-            self.log.exception(u"Error during evaluating code: \n'{}'\n".format(repr(code)))
-            return self._build_error_content(e)
+        if footer_message is not None:
+            cell_output += "\n\n" + footer_message
+
+        return cell_output
+
 
 # This entry point is used for debug only:
 if __name__ == '__main__':
