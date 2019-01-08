@@ -20,13 +20,42 @@ ROLLBACK_COMM_TARGET_NAME = "coq_kernel.rollback_comm"
 with open(os.path.join(os.path.dirname(__file__), "rollback_comm.js"), 'r') as f:
     HTML_ROLLBACK_COMM_DEFINITION = """<script>{}</script>""".format(f.read())
 
-HTML_OUTPUT_TEMPLATE = """<pre id="output_{0}">{1}</pre>"""
+HTML_OUTPUT_TEMPLATE = """
+<div id="output_{0}">
+    <pre>{1}</pre>
+    <br>
+    <i class="fa-check fa text-success"></i>
+    <span>{2}</span>
+</div>
+"""
 
-HTML_ROLLBACK_MESSAGE_TEMPLATE = """<pre id="rollback_message_{0}" style="display: none">Cell rolled back.</pre>"""
+HTML_ERROR_OUTPUT_TEMPLATE = """
+<div id="output_{0}">
+    <pre>{1}</pre>
+    <br>
+    <i class="fa-times fa text-danger"></i>
+    <span>{2}</span>
+</div>
+"""
+
+HTML_ROLLBACK_MESSAGE_TEMPLATE = """
+<div id="rollback_message_{0}" style="display: none">
+    <i class="fa-exclamation-circle fa text-info"></i>
+    <span>Cell rolled back.</span>
+</div>
+"""
+
+HTML_ROLLBACK_MESSAGE = """
+<div>
+    <i class="fa-exclamation-circle fa text-info"></i>
+    <span>Cell rolled back.</span>
+</div>
+"""
 
 HTML_ROLLBACK_BUTTON_TEMPLATE = """
-<button id="rollblack_button_{0}" class="btn btn-default btn-xs ml-6" style="display: none" onclick="coq_kernel_rollback_comm_{0}.rollback()">
-    <i class="fa-step-backward fa"></i><span class="toolbar-btn-label">Rollback cell</span>
+<button id="rollblack_button_{0}" class="btn btn-default btn-xs" style="display: none; margin-top: 5px;" onclick="coq_kernel_rollback_comm_{0}.rollback()">
+    <i class="fa-step-backward fa"></i>
+    <span class="toolbar-btn-label">Rollback cell</span>
 </button>
 """
 
@@ -110,9 +139,9 @@ class CoqtopWrapper:
         del raw_outputs[-hidden_commands_issued] # omit checkpoint marker output
 
         if self._coqtop.match.group(u"proving") != u"":
-            footer_message = u"Proving: {}".format(self._coqtop.match.group(u"proving"))
+            footer_message = u"Cell evaluated, proving: {}.".format(self._coqtop.match.group(u"proving"))
         else:
-            footer_message = None
+            footer_message = "Cell evaluated."
 
         return (raw_outputs, footer_message, False)
 
@@ -327,8 +356,7 @@ class CoqKernel(Kernel):
 
     def _send_rollback_update_display_data(self, display_id, parent_header):
         text = "Cell rolled back."
-        html = "<pre>Cell rolled back.</pre>"
-        content = self._build_display_data_content(text, html, display_id)
+        content = self._build_display_data_content(text, HTML_ROLLBACK_MESSAGE, display_id)
         self.session.send(self.iopub_socket, "update_display_data", content, parent_header, None, None, None, None, None)
 
     def _send_execute_result(self, raw_outputs, footer_message, display_id, rolled_back):
@@ -347,13 +375,16 @@ class CoqKernel(Kernel):
 
         return cell_output
 
-    def _render_html_result(self, raw_outputs, footer_message, display_id, can_roll_back):
-        html = HTML_OUTPUT_TEMPLATE.format(display_id, self._render_text_result(raw_outputs, footer_message))
-        if can_roll_back:
+    def _render_html_result(self, raw_outputs, footer_message, display_id, success_output):
+        if success_output:
+            html = HTML_OUTPUT_TEMPLATE.format(display_id, self._render_text_result(raw_outputs, None), footer_message)
             html += HTML_ROLLBACK_MESSAGE_TEMPLATE.format(display_id)
             html += HTML_ROLLBACK_BUTTON_TEMPLATE.format(display_id)
             html += HTML_ROLLBACK_COMM_DEFINITION
             html += HTML_ROLLBACK_COMM_INIT_TEMPLATE.format(display_id)
+        else:
+            html = HTML_ERROR_OUTPUT_TEMPLATE.format(display_id, self._render_text_result(raw_outputs, None), footer_message)
+
         return html
 
 
