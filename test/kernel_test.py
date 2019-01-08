@@ -58,7 +58,7 @@ class KernelTests(jupyter_kernel_test.KernelTests):
     def test_coq_jupyter____executing_compute_command_when_not_proving____does_not_print_proving_context(self):
         (expected_result, command) = self._build_sum_command(100, 3)
         result = self._execute_cell(command)
-        self.assertNotIn("Proving:", result)
+        self.assertNotIn("proving:", result)
         self.assertNotIn("subgoal", result)
 
     def test_coq_jupyter____executing_multiple_commands____prints_computed_command_results(self):
@@ -71,33 +71,33 @@ class KernelTests(jupyter_kernel_test.KernelTests):
     def test_coq_jupyter____executing_commands_when_proving____prints_proving_context(self):
         result = self._execute_cell("Theorem t1 : True.")
         self.assertIn("1 subgoal", result)
-        self.assertIn("Proving: t1", result)
+        self.assertIn("proving: t1", result)
 
         result = self._execute_cell(self._build_sum_command(100, 6)[1])
         self.assertIn("1 subgoal", result)
-        self.assertIn("Proving: t1", result)
+        self.assertIn("proving: t1", result)
 
         result = self._execute_cell("Proof. pose (i1 := I).")
         self.assertIn("1 subgoal", result)
         self.assertIn("i1 := I : True", result)
-        self.assertIn("Proving: t1", result)
+        self.assertIn("proving: t1", result)
 
         result = self._execute_cell(self._build_sum_command(100, 7)[1])
         self.assertIn("1 subgoal", result)
         self.assertIn("i1 := I : True", result)
-        self.assertIn("Proving: t1", result)
+        self.assertIn("proving: t1", result)
 
         result = self._execute_cell("exact i1. Qed.")
         self.assertNotIn("1 subgoal", result)
         self.assertNotIn("No more subgoals", result)
         self.assertNotIn("i1 := I : True", result)
-        self.assertNotIn("Proving:", result)
+        self.assertNotIn("proving:", result)
 
         result = self._execute_cell(self._build_sum_command(100, 8)[1])
         self.assertNotIn("1 subgoal", result)
         self.assertNotIn("No more subgoals", result)
         self.assertNotIn("i1 := I : True", result)
-        self.assertNotIn("Proving:", result)
+        self.assertNotIn("proving:", result)
 
     def test_coq_jupyter____when_proving____does_not_print_hidden_commands_and_their_results(self):
         result = self._execute_cell("Theorem t2 : True.")
@@ -115,14 +115,14 @@ class KernelTests(jupyter_kernel_test.KernelTests):
 
     def test_coq_jupyter____when_proving____prints_most_recent_proving_context_once(self):
         result = self._execute_cell("Theorem t3 : bool. Proof. pose (b1 := true). pose (b2 := false).")
-        self.assertEqual(result.count("Proving: t3"), 1, "result: " + repr(result))
+        self.assertEqual(result.count("proving: t3"), 1, "result: " + repr(result))
         self.assertEqual(result.count("1 subgoal"), 1, "result: " + repr(result))
         self.assertEqual(result.count("No more subgoals"), 0, "result: " + repr(result))
         self.assertEqual(result.count("b1 := true : bool"), 1, "result: " + repr(result))
         self.assertEqual(result.count("b2 := false : bool"), 1, "result: " + repr(result))
 
         result = self._execute_cell("exact b2.")
-        self.assertEqual(result.count("Proving: t3"), 1, "result: " + repr(result))
+        self.assertEqual(result.count("proving: t3"), 1, "result: " + repr(result))
         self.assertEqual(result.count("1 subgoal"), 0, "result: " + repr(result))
         self.assertEqual(result.count("No more subgoals"), 1, "result: " + repr(result))
         self.assertEqual(result.count("b1 := true : bool"), 0, "result: " + repr(result))
