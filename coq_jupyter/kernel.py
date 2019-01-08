@@ -183,7 +183,7 @@ class CellJournal:
         self.history.append([state_label_before, state_label_after, display_id, rolled_back, parent_header])
 
     def find_by_display_id(self, display_id):
-        result = list(filter(lambda r: r[2] == display_id and not r[3], self.history))
+        result = list(filter(lambda r: r[2] == display_id, self.history))
         if len(result) == 1:
             return result[0]
         else:
@@ -263,7 +263,7 @@ class CoqKernel(Kernel):
         comm_id = content["comm_id"]
         if comm_id in self._comms:
             if content["data"]["comm_msg_type"] == "request_rollback_sate":
-                self._send_rollback_state_comm_msg(comm_id, False)
+                self._handle_request_rollback_sate(comm_id, msg)
             elif content["data"]["comm_msg_type"] == "rollback":
                 self._handle_rollback(msg)
             else:
@@ -275,19 +275,36 @@ class CoqKernel(Kernel):
         del self._comms[msg["content"]["comm_id"]]
         self.log.info(u"Comm closed, msg: {}".format(repr(msg)))
 
+    def _handle_request_rollback_sate(self, comm_id, msg):
+        cell_record = self._journal.find_by_display_id(self._comms[comm_id])
+        if cell_record is not None:
+            self._send_rollback_state_comm_msg(comm_id, cell_record[3]) # TODO
+        else:
+            self.log.info(u"Unexpected (possibly leftover) comm_msg, msg: {}".format(repr(msg)))
+
     def _handle_rollback(self, msg):
         self.log.info(u"rollback, msg: {}".format(repr(msg)))
         comm_id = msg["content"]["comm_id"]
         display_id = self._comms[comm_id]
         cell_record = self._journal.find_by_display_id(display_id)
+        rolled_back = cell_record[3]
 
-        if cell_record is not None:
+        if cell_record is not None and not rolled_back:
             state_label_before = cell_record[0]
             self._coqtop.eval("BackTo {}.".format(state_label_before)) # TODO check for error?
 
             for record in [cell_record] + self._journal.find_rolled_back(state_label_before):
+                # mark cell as rolled back
                 record[3] = True
-                self._send_rollback_update_display_data(record[2], record[4])
+
+                # update rolled cell content
+                display_id = record[2]
+                parent_header = record[4]
+                self._send_rollback_update_display_data(display_id, parent_header)
+
+                # notify any relevant rollback comms
+                for comm_id in [c for (c, d) in self._comms.items() if d == display_id]:
+                    self._send_rollback_state_comm_msg(comm_id, True)
 
         else:
             self.log.info(u"Unexpected (possibly leftover) comm_msg, msg: {}".format(repr(msg)))
