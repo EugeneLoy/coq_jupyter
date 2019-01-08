@@ -53,10 +53,12 @@ HTML_ROLLBACK_MESSAGE = """
 """
 
 HTML_ROLLBACK_BUTTON_TEMPLATE = """
-<button id="rollblack_button_{0}" class="btn btn-default btn-xs" style="display: none; margin-top: 5px;" onclick="coq_kernel_rollback_comm_{0}.rollback()">
-    <i class="fa-step-backward fa"></i>
-    <span class="toolbar-btn-label">Rollback cell</span>
-</button>
+<div style="position: relative;">
+    <button id="rollblack_button_{0}" class="btn btn-default btn-xs" style="display: none; margin-top: 5px;" onclick="coq_kernel_rollback_comm_{0}.rollback()">
+        <i class="fa-step-backward fa"></i>
+        <span class="toolbar-btn-label">Rollback cell</span>
+    </button>
+</div>
 """
 
 HTML_ROLLBACK_COMM_INIT_TEMPLATE = """
