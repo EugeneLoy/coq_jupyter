@@ -333,7 +333,7 @@ class CoqKernel(Kernel):
 
     def _send_execute_result(self, raw_outputs, footer_message, display_id, rolled_back):
         text = self._render_text_result(raw_outputs, footer_message)
-        html = self._render_html_result(raw_outputs, footer_message, display_id)
+        html = self._render_html_result(raw_outputs, footer_message, display_id, not rolled_back)
         content = self._build_display_data_content(text, html, display_id)
         content['execution_count'] = self.execution_count
         self.send_response(self.iopub_socket, 'execute_result', content)
@@ -347,12 +347,13 @@ class CoqKernel(Kernel):
 
         return cell_output
 
-    def _render_html_result(self, raw_outputs, footer_message, display_id):
+    def _render_html_result(self, raw_outputs, footer_message, display_id, can_roll_back):
         html = HTML_OUTPUT_TEMPLATE.format(display_id, self._render_text_result(raw_outputs, footer_message))
-        html += HTML_ROLLBACK_MESSAGE_TEMPLATE.format(display_id)
-        html += HTML_ROLLBACK_BUTTON_TEMPLATE.format(display_id)
-        html += HTML_ROLLBACK_COMM_DEFINITION
-        html += HTML_ROLLBACK_COMM_INIT_TEMPLATE.format(display_id)
+        if can_roll_back:
+            html += HTML_ROLLBACK_MESSAGE_TEMPLATE.format(display_id)
+            html += HTML_ROLLBACK_BUTTON_TEMPLATE.format(display_id)
+            html += HTML_ROLLBACK_COMM_DEFINITION
+            html += HTML_ROLLBACK_COMM_INIT_TEMPLATE.format(display_id)
         return html
 
 
