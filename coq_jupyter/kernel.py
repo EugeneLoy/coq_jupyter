@@ -1,6 +1,7 @@
 import pexpect
 import re
 import random
+import os
 
 from ipykernel.kernelbase import Kernel
 from subprocess import check_output
@@ -16,44 +17,25 @@ ANSI_ESCAPE_PATTERN = re.compile(r'(\x9B|\x1B\[)[0-?]*[ -/]*[@-~]') # see: https
 
 ROLLBACK_COMM_TARGET_NAME = "coq_kernel.rollback_comm"
 
-# TODO decide, maybe move this to more appropriate place:
-HTML_COMM_DEFINITION = """
-function CoqKernelRollbackComm(display_id) {
-    var self = this;
-    self.display_id = display_id;
-    self.button_id = "#rollblack_button_" + self.display_id;
-    self.jupyter = require('base/js/namespace');
+with open(os.path.join(os.path.dirname(__file__), "rollback_comm.js"), 'r') as f:
+    HTML_ROLLBACK_COMM_DEFINITION = """<script>{}</script>""".format(f.read())
 
-    self.init = function () {
-        if (self.jupyter.notebook.kernel !== null) {
-            console.info('Initializing rollback comm for: ' + self.display_id);
-            self.comm = self.jupyter.notebook.kernel.comm_manager.new_comm('coq_kernel.rollback_comm', { 'display_id': self.display_id });
-            self.comm.on_msg(self.handle_comm_message);
-            self.comm.send({ 'comm_msg_type': 'request_rollback_sate' });
-        } else {
-            // kernel is not ready yet - try later
-            setTimeout(self.init, 1000)
-        }
-    };
+HTML_OUTPUT_TEMPLATE = """<pre id="output_{0}">{1}</pre>"""
 
-    self.rollback = function () {
-        self.comm.send({ 'comm_msg_type': 'rollback' });
-        $(self.button_id).prop('disabled', true);
-    };
+HTML_ROLLBACK_MESSAGE_TEMPLATE = """<pre id="rollback_message_{0}" style="display: none">Cell rolled back.</pre>"""
 
-    self.handle_comm_message = function(msg) {
-        if (msg.content.data.comm_msg_type === "rollback_state") {
-            $(self.button_id).toggle(!msg.content.data.rolled_back)
-        } else {
-            console.error('Unexpected comm message: ' + JSON.stringify(msg));
-        }
-    }
-};
+HTML_ROLLBACK_BUTTON_TEMPLATE = """
+<button id="rollblack_button_{0}" class="btn btn-default btn-xs ml-6" style="display: none" onclick="coq_kernel_rollback_comm_{0}.rollback()">
+    <i class="fa-step-backward fa"></i><span class="toolbar-btn-label">Rollback cell</span>
+</button>
 """
-HTML_OUTPUT_TEMPLATE = """<pre>{}</pre>"""
-HTML_ROLLBACK_BUTTON_TEMPLATE = """<button id="rollblack_button_{0}" class="btn btn-default btn-xs ml-6" style="display: none" onclick="coq_kernel_rollback_comm_{0}.rollback()"><i class="fa-step-backward fa"></i><span class="toolbar-btn-label">Rollback cell</span></button>"""
-HTML_ROLLBACK_COMM_INIT_TEMPLATE = """<script>{0} var coq_kernel_rollback_comm_{1} = new CoqKernelRollbackComm('{1}'); coq_kernel_rollback_comm_{1}.init();</script>"""
 
+HTML_ROLLBACK_COMM_INIT_TEMPLATE = """
+<script>
+    var coq_kernel_rollback_comm_{0} = new CoqKernelRollbackComm('{0}');
+    coq_kernel_rollback_comm_{0}.init();
+</script>
+"""
 
 class CoqtopWrapper:
 
@@ -366,9 +348,11 @@ class CoqKernel(Kernel):
         return cell_output
 
     def _render_html_result(self, raw_outputs, footer_message, display_id):
-        html = HTML_OUTPUT_TEMPLATE.format(self._render_text_result(raw_outputs, footer_message))
+        html = HTML_OUTPUT_TEMPLATE.format(display_id, self._render_text_result(raw_outputs, footer_message))
+        html += HTML_ROLLBACK_MESSAGE_TEMPLATE.format(display_id)
         html += HTML_ROLLBACK_BUTTON_TEMPLATE.format(display_id)
-        html += HTML_ROLLBACK_COMM_INIT_TEMPLATE.format(HTML_COMM_DEFINITION, display_id)
+        html += HTML_ROLLBACK_COMM_DEFINITION
+        html += HTML_ROLLBACK_COMM_INIT_TEMPLATE.format(display_id)
         return html
 
 
