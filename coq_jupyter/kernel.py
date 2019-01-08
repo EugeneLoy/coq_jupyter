@@ -51,7 +51,7 @@ function CoqKernelRollbackComm(display_id) {
 };
 """
 HTML_OUTPUT_TEMPLATE = """<pre>{}</pre>"""
-HTML_ROLLBACK_BUTTON_TEMPLATE = """<button id="rollblack_button_{0}" style="display: none" onclick="coq_kernel_rollback_comm_{0}.rollback()">Rollback cell</button>"""
+HTML_ROLLBACK_BUTTON_TEMPLATE = """<button id="rollblack_button_{0}" class="btn btn-default btn-xs ml-6" style="display: none" onclick="coq_kernel_rollback_comm_{0}.rollback()"><i class="fa-step-backward fa"></i><span class="toolbar-btn-label">Rollback cell</span></button>"""
 HTML_ROLLBACK_COMM_INIT_TEMPLATE = """<script>{0} var coq_kernel_rollback_comm_{1} = new CoqKernelRollbackComm('{1}'); coq_kernel_rollback_comm_{1}.init();</script>"""
 
 
