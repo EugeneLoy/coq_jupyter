@@ -8,7 +8,7 @@ from subprocess import check_output
 from operator import itemgetter
 from uuid import uuid4
 
-__version__ = '1.2.0'
+__version__ = '1.3.0'
 
 PROMPT = u"\<prompt\>.+?\s\<\s(?P<state_label>\d+)\s\|(?P<proving>.*?)\|\s\d+\s\<\s\<\/prompt\>"
 
