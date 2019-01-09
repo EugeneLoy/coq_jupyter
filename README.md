@@ -4,14 +4,19 @@ A [Jupyter](https://jupyter.org/) kernel for [Coq](https://coq.inria.fr/).
 
 You can try it online in [Binder](https://mybinder.org/v2/gh/EugeneLoy/coq_jupyter_demo/master?filepath=demo.ipynb).
 
-To install:
+## Installation
+
+Make sure that Coq is installed and `coqtop` is in your `PATH`.
+
+After that install (works with both python 2 and 3):
 
     pip install coq_jupyter
     python -m coq_jupyter.install
 
-To use it, run one of:
+## Customizing `coqtop` arguments
 
-    jupyter notebook
-    # In the notebook interface, select Coq from the 'New' menu
-    jupyter qtconsole --kernel coq
-    jupyter console --kernel coq
+Use `--coqtop-args` to supply additional arguments to `coqtop` when installing kernel. In this case you might also want to set custom kernel name/display name using `--kernel-name`/`--kernel-display-name`.
+
+For example, to add kernel that instructs `coqtop` to load `/workspace/init.v` on startup:
+
+    python -m coq_jupyter.install --kernel-name=coq_with_init --kernel-display-name="Coq (with init.v)" --coqtop-args="-l /workspace/init.v"

@@ -4,6 +4,7 @@ import random
 import os
 
 from ipykernel.kernelbase import Kernel
+from traitlets import Unicode
 from subprocess import check_output
 from operator import itemgetter
 from uuid import uuid4
@@ -72,9 +73,9 @@ class CoqtopWrapper:
 
     state_label = None
 
-    def __init__(self, kernel):
+    def __init__(self, kernel, coqtop_args):
         self.log = kernel.log # TODO
-        self._coqtop = pexpect.spawn(u"coqtop -emacs -quiet", echo=False, encoding=u"utf-8")
+        self._coqtop = pexpect.spawn(u"coqtop -emacs -quiet {}".format(coqtop_args), echo=False, encoding=u"utf-8")
         self.state_label = "1"
         self.eval(u"(* dummy init command *)")
 
@@ -232,9 +233,12 @@ class CoqKernel(Kernel):
         return LANGUAGE_VERSION_PATTERN.search(self.banner).group(1)
 
 
+    coqtop_args = Unicode().tag(config=True)
+
+
     def __init__(self, **kwargs):
         Kernel.__init__(self, **kwargs)
-        self._coqtop = CoqtopWrapper(self)
+        self._coqtop = CoqtopWrapper(self, self.coqtop_args)
         self._journal = CellJournal(self)
         self._comms = {}
         for msg_type in ['comm_open', 'comm_msg', 'comm_close']:
