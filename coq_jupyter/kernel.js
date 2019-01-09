@@ -291,6 +291,23 @@
 
   return {
     onload: function() {
+      var action = {
+        icon: 'fa-step-backward',
+        cmd: 'Rollback cell',
+        help: 'Rollback cell',
+        help_index: 'zz', // TODO not shure what to set here
+        handler: function () {
+          $(".cell.selected .enabled_rollback_button, .cell.jupyter-soft-selected .enabled_rollback_button").triggerHandler("click");
+        }
+      };
+      var prefix = 'coq_jupyter';
+      var action_name = 'rollback-cell';
+
+      var jupyter = require('base/js/namespace');
+      var full_action_name = jupyter.actions.register(action, action_name, prefix);
+      jupyter.toolbar.add_buttons_group([full_action_name]);
+      jupyter.keyboard_manager.command_shortcuts.add_shortcut('Ctrl-Backspace', full_action_name);
+
       console.info('Coq kernel script loaded.');
     }
   };

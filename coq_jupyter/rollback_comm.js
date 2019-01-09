@@ -23,13 +23,19 @@ function CoqKernelRollbackComm(display_id) {
     self.rollback = function () {
         self.comm.send({ 'comm_msg_type': 'rollback' });
         $(self.button_id).prop('disabled', true);
+        $(self.button_id).removeClass("enabled_rollback_button");
     };
 
     self.handle_comm_message = function(msg) {
         if (msg.content.data.comm_msg_type === "rollback_state") {
-            $(self.output_id).toggle(!msg.content.data.rolled_back)
-            $(self.button_id).toggle(!msg.content.data.rolled_back)
-            $(self.rollback_message_id).toggle(msg.content.data.rolled_back)
+            $(self.output_id).toggle(!msg.content.data.rolled_back);
+            $(self.rollback_message_id).toggle(msg.content.data.rolled_back);
+            $(self.button_id).toggle(!msg.content.data.rolled_back);
+            if (msg.content.data.rolled_back) {
+                $(self.button_id).removeClass("enabled_rollback_button");
+            } else {
+                $(self.button_id).addClass("enabled_rollback_button");
+            }
         } else {
             console.error('Unexpected comm message: ' + JSON.stringify(msg));
         }
