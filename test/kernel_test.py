@@ -198,7 +198,7 @@ class KernelTests(jupyter_kernel_test.KernelTests):
         # https://github.com/EugeneLoy/coq_jupyter/issues/21
         # https://github.com/EugeneLoy/coq_jupyter/issues/23
 
-        result = self._execute_cell("Compute 5001.")
+        result = self._execute_cell("Compute 50000 + 50000.")
 
         self.assertIn("Warning: ", result)
         self.assertNotIn("<warning>", result)
