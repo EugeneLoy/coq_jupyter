@@ -2,6 +2,8 @@ import pexpect
 import re
 import random
 import os
+import sys
+import traceback
 
 from ipykernel.kernelbase import Kernel
 from traitlets import Unicode
@@ -265,7 +267,7 @@ class CoqKernel(Kernel):
             return self._build_ok_content()
         except Exception as e:
             self.log.exception(u"Error during evaluating code: \n'{}'\n".format(repr(code)))
-            return self._build_error_content(e)
+            return self._build_error_content(*sys.exc_info())
 
     def comm_open(self, stream, ident, msg):
         content = msg["content"]
@@ -335,12 +337,12 @@ class CoqKernel(Kernel):
             'user_expressions': {},
         }
 
-    def _build_error_content(self, e):
+    def _build_error_content(self, ex_type, ex, tb):
         return {
             'status': 'error',
-            'ename' : type(e).__name__,
-            'evalue' : repr(e), #TODO
-            'traceback' : [] # TODO
+            'ename' : ex_type.__name__,
+            'evalue' : repr(ex),
+            'traceback' : traceback.format_list(traceback.extract_tb(tb))
         }
 
     def _build_display_data_content(self, text, html, display_id):
