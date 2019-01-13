@@ -200,7 +200,7 @@ class KernelTests(jupyter_kernel_test.KernelTests):
 
         result = self._execute_cell("Compute 5001.")
 
-        self.assertIn("Warning: Stack overflow or segmentation fault happens when", result)
+        self.assertIn("Warning: ", result)
         self.assertNotIn("<warning>", result)
 
 
