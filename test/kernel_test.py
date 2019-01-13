@@ -193,6 +193,16 @@ class KernelTests(jupyter_kernel_test.KernelTests):
             self.assertNotIn(valid_definitions[0], result, "fixture: {}".format(repr(fixture[f])))
             self.assertNotIn(valid_definitions[1], result, "fixture: {}".format(repr(fixture[f])))
 
+    def test_coq_jupyter____when_executing_command_that_results_in_warning____prints_warning(self):
+        # this test ensures fix of the following:
+        # https://github.com/EugeneLoy/coq_jupyter/issues/21
+        # https://github.com/EugeneLoy/coq_jupyter/issues/23
+
+        result = self._execute_cell("Compute 5001.")
+
+        self.assertIn("Warning: Stack overflow or segmentation fault happens when", result)
+        self.assertNotIn("<warning>", result)
+
 
 if __name__ == '__main__':
     unittest.main()
