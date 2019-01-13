@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 import pexpect
 import re
 import random
@@ -13,7 +15,7 @@ from uuid import uuid4
 
 __version__ = '1.3.0'
 
-PROMPT = u"\<prompt\>.+?\s\<\s(?P<state_label>\d+)\s\|(?P<proving>.*?)\|\s\d+\s\<\s\<\/prompt\>"
+PROMPT = "\<prompt\>.+?\s\<\s(?P<state_label>\d+)\s\|(?P<proving>.*?)\|\s\d+\s\<\s\<\/prompt\>"
 
 LANGUAGE_VERSION_PATTERN = re.compile(r'version (\d+(\.\d+)+)')
 ANSI_ESCAPE_PATTERN = re.compile(r'(\x9B|\x1B\[)[0-?]*[ -/]*[@-~]') # see: https://stackoverflow.com/a/38662876/576549
@@ -77,20 +79,20 @@ class CoqtopWrapper:
 
     def __init__(self, kernel, coqtop_args):
         self.log = kernel.log # TODO
-        self._coqtop = pexpect.spawn(u"coqtop -emacs -quiet {}".format(coqtop_args), echo=False, encoding=u"utf-8", codec_errors=u"replace")
+        self._coqtop = pexpect.spawn("coqtop -emacs -quiet {}".format(coqtop_args), echo=False, encoding="utf-8", codec_errors="replace")
         self.state_label = "1"
-        self.eval(u"(* dummy init command *)")
+        self.eval("(* dummy init command *)")
 
     def eval(self, code):
         rollback_state_label = self.state_label
         checkpoint_marker_lhs = random.randint(0, 499)
         checkpoint_marker_rhs = random.randint(0, 499)
         checkpoint_marker = str(checkpoint_marker_lhs + checkpoint_marker_rhs)
-        eval_checkpoint_command = u"Compute {} + {}.".format(checkpoint_marker_lhs, checkpoint_marker_rhs)
+        eval_checkpoint_command = "Compute {} + {}.".format(checkpoint_marker_lhs, checkpoint_marker_rhs)
         hidden_commands_issued = 1
 
         # attempt evaluation
-        self._coqtop.send(u"{}\n{}\n".format(code, eval_checkpoint_command))
+        self._coqtop.send("{}\n{}\n".format(code, eval_checkpoint_command))
 
         # collect evaluation output
         outputs = []
@@ -99,22 +101,22 @@ class CoqtopWrapper:
             outputs.append((prompt_match, raw_output, simplified_output, error_message))
 
             if checkpoint_marker in simplified_output:
-                self.log.debug(u"checkpoint reached")
+                self.log.debug("checkpoint reached")
                 break
 
             if error_message and eval_checkpoint_command in simplified_output:
-                self.log.debug(u"checkpoint eval failed")
+                self.log.debug("checkpoint eval failed")
                 break
 
         # query proof state if proving something now
-        if outputs[-1][0].group(u"proving") != u"":
-            self._coqtop.sendline(u"Show.")
+        if outputs[-1][0].group("proving") != "":
+            self._coqtop.sendline("Show.")
             outputs.append(self._expect_coqtop_prompt())
             hidden_commands_issued += 1
 
         # do full cell rollback if error were detected
         if any(map(itemgetter(3), outputs)):
-            self._coqtop.sendline(u"BackTo {}.".format(rollback_state_label))
+            self._coqtop.sendline("BackTo {}.".format(rollback_state_label))
             self._expect_coqtop_prompt()
 
             raw_outputs = []
@@ -133,47 +135,47 @@ class CoqtopWrapper:
 
         # rollback issued hidden commands
         # TODO not 100% sure if this rollback is really needed. Leave it for now.
-        self._coqtop.sendline(u"BackTo {}.".format(outputs[-hidden_commands_issued][0].group(u"state_label")))
+        self._coqtop.sendline("BackTo {}.".format(outputs[-hidden_commands_issued][0].group("state_label")))
         self._expect_coqtop_prompt()
 
         # treat state after hidden commands rollback as 'commited'
-        self.state_label = self._coqtop.match.group(u"state_label")
+        self.state_label = self._coqtop.match.group("state_label")
 
         # build cell output message
         raw_outputs = list(map(itemgetter(1), outputs))
         del raw_outputs[-hidden_commands_issued] # omit checkpoint marker output
 
-        if self._coqtop.match.group(u"proving") != u"":
-            footer_message = u"Cell evaluated, proving: {}.".format(self._coqtop.match.group(u"proving"))
+        if self._coqtop.match.group("proving") != "":
+            footer_message = "Cell evaluated, proving: {}.".format(self._coqtop.match.group("proving"))
         else:
             footer_message = "Cell evaluated."
 
         return (raw_outputs, footer_message, False)
 
     def _expect_coqtop_prompt(self):
-        self.log.debug(u"expecting coqtop prompt")
+        self.log.debug("expecting coqtop prompt")
         self._coqtop.expect(PROMPT, None)
 
         prompt_match = self._coqtop.match
-        self.log.debug(u"coqtop prompt: {}".format(repr(prompt_match)))
+        self.log.debug("coqtop prompt: {}".format(repr(prompt_match)))
 
         raw_output = self._coqtop.before
-        self.log.debug(u"coqtop output (raw): {}".format(repr(raw_output)))
+        self.log.debug("coqtop output (raw): {}".format(repr(raw_output)))
 
         simplified_output = self._simplify_output(raw_output)
-        self.log.debug(u"coqtop output (simplified): {}".format(repr(simplified_output)))
+        self.log.debug("coqtop output (simplified): {}".format(repr(simplified_output)))
 
         error_message = self._is_error_output(simplified_output)
-        self.log.debug(u"coqtop output contains error message: {}".format(error_message))
+        self.log.debug("coqtop output contains error message: {}".format(error_message))
 
         return (prompt_match, raw_output, simplified_output, error_message)
 
     def _simplify_output(self, output):
         # clean colors
-        output = ANSI_ESCAPE_PATTERN.sub(u"", output)
+        output = ANSI_ESCAPE_PATTERN.sub("", output)
         # replace \n\r with \n
-        output = u"\n".join(output.splitlines())
-        return output.strip(u"\n\t ")
+        output = "\n".join(output.splitlines())
+        return output.strip("\n\t ")
 
     def _is_error_output(self, output):
         lines = output.splitlines()
@@ -248,8 +250,8 @@ class CoqKernel(Kernel):
 
     def do_execute(self, code, silent, store_history=True, user_expressions=None, allow_stdin=False):
         try:
-            self.log.info(u"Processing 'execute_request', code: \n{}\n".format(repr(code)))
-            if code.strip(u"\n\r\t ") != u"":
+            self.log.info("Processing 'execute_request', code: \n{}\n".format(repr(code)))
+            if code.strip("\n\r\t ") != "":
 
                 state_label_before = self._coqtop.state_label
                 result = self._coqtop.eval(code)
@@ -259,23 +261,23 @@ class CoqKernel(Kernel):
 
                 self._journal.add(state_label_before, state_label_after, display_id, rolled_back, self._parent_header)
 
-                self.log.info(u"Sending 'execute_result', evaluation result: \n{}\n".format(repr(result)))
+                self.log.info("Sending 'execute_result', evaluation result: \n{}\n".format(repr(result)))
                 self._send_execute_result(raw_outputs, footer_message, display_id, rolled_back)
             else:
-                self.log.info(u"code is empty - skipping evaluation and sending results.")
+                self.log.info("code is empty - skipping evaluation and sending results.")
 
             return self._build_ok_content()
         except Exception as e:
-            self.log.exception(u"Error during evaluating code: \n'{}'\n".format(repr(code)))
+            self.log.exception("Error during evaluating code: \n'{}'\n".format(repr(code)))
             return self._build_error_content(*sys.exc_info())
 
     def comm_open(self, stream, ident, msg):
         content = msg["content"]
         if content["target_name"] == ROLLBACK_COMM_TARGET_NAME:
             self._comms[content["comm_id"]] = content["data"]["display_id"]
-            self.log.info(u"Comm opened, msg: {}".format(repr(msg)))
+            self.log.info("Comm opened, msg: {}".format(repr(msg)))
         else:
-            self.log.error(u"Unexpected comm_open, msg: {}".format(repr(msg)))
+            self.log.error("Unexpected comm_open, msg: {}".format(repr(msg)))
 
     def comm_msg(self, stream, ident, msg):
         content = msg["content"]
@@ -286,23 +288,23 @@ class CoqKernel(Kernel):
             elif content["data"]["comm_msg_type"] == "rollback":
                 self._handle_rollback(msg)
             else:
-                self.log.error(u"Unexpected comm_msg, msg: {}".format(repr(msg)))
+                self.log.error("Unexpected comm_msg, msg: {}".format(repr(msg)))
         else:
-            self.log.info(u"Unexpected (possibly leftover) comm_msg, msg: {}".format(repr(msg)))
+            self.log.info("Unexpected (possibly leftover) comm_msg, msg: {}".format(repr(msg)))
 
     def comm_close(self, stream, ident, msg):
         del self._comms[msg["content"]["comm_id"]]
-        self.log.info(u"Comm closed, msg: {}".format(repr(msg)))
+        self.log.info("Comm closed, msg: {}".format(repr(msg)))
 
     def _handle_request_rollback_sate(self, comm_id, msg):
         cell_record = self._journal.find_by_display_id(self._comms[comm_id])
         if cell_record is not None:
             self._send_rollback_state_comm_msg(comm_id, cell_record[3]) # TODO
         else:
-            self.log.info(u"Unexpected (possibly leftover) comm_msg, msg: {}".format(repr(msg)))
+            self.log.info("Unexpected (possibly leftover) comm_msg, msg: {}".format(repr(msg)))
 
     def _handle_rollback(self, msg):
-        self.log.info(u"rollback, msg: {}".format(repr(msg)))
+        self.log.info("rollback, msg: {}".format(repr(msg)))
         comm_id = msg["content"]["comm_id"]
         display_id = self._comms[comm_id]
         cell_record = self._journal.find_by_display_id(display_id)
@@ -326,7 +328,7 @@ class CoqKernel(Kernel):
                     self._send_rollback_state_comm_msg(comm_id, True)
 
         else:
-            self.log.info(u"Unexpected (possibly leftover) comm_msg, msg: {}".format(repr(msg)))
+            self.log.info("Unexpected (possibly leftover) comm_msg, msg: {}".format(repr(msg)))
 
 
     def _build_ok_content(self):
@@ -375,13 +377,13 @@ class CoqKernel(Kernel):
         self.send_response(self.iopub_socket, 'execute_result', content)
 
     def _render_text_result(self, raw_outputs, footer_message):
-        cell_output = u"\n".join(raw_outputs)
-        cell_output = cell_output.rstrip(u"\n\r\t ").lstrip(u"\n\r")
+        cell_output = "\n".join(raw_outputs)
+        cell_output = cell_output.rstrip("\n\r\t ").lstrip("\n\r")
 
         # strip extra tag formating
         # TODO this is a temporary solution that won't be relevant after implementing ide xml protocol
-        for tag in [u"warning", u"infomsg"]:
-            cell_output = cell_output.replace("<{}>".format(tag), u"").replace("</{}>".format(tag), u"")
+        for tag in ["warning", "infomsg"]:
+            cell_output = cell_output.replace("<{}>".format(tag), "").replace("</{}>".format(tag), "")
 
         if footer_message is not None:
             cell_output += "\n\n" + footer_message
