@@ -376,6 +376,11 @@ class CoqKernel(Kernel):
         cell_output = u"\n".join(raw_outputs)
         cell_output = cell_output.rstrip(u"\n\r\t ").lstrip(u"\n\r")
 
+        # strip extra tag formating
+        # TODO this is a temporary solution that won't be relevant after implementing ide xml protocol
+        for tag in [u"warning", u"infomsg"]:
+            cell_output = cell_output.replace("<{}>".format(tag), u"").replace("</{}>".format(tag), u"")
+
         if footer_message is not None:
             cell_output += "\n\n" + footer_message
 
