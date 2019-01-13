@@ -75,7 +75,7 @@ class CoqtopWrapper:
 
     def __init__(self, kernel, coqtop_args):
         self.log = kernel.log # TODO
-        self._coqtop = pexpect.spawn(u"coqtop -emacs -quiet {}".format(coqtop_args), echo=False, encoding=u"utf-8")
+        self._coqtop = pexpect.spawn(u"coqtop -emacs -quiet {}".format(coqtop_args), echo=False, encoding=u"utf-8", codec_errors=u"replace")
         self.state_label = "1"
         self.eval(u"(* dummy init command *)")
 
