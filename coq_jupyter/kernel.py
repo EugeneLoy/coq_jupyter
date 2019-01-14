@@ -1,6 +1,5 @@
 from __future__ import unicode_literals
 
-import os
 import re
 import sys
 import traceback
@@ -10,6 +9,8 @@ from subprocess import check_output
 from uuid import uuid4
 from ipykernel.kernelbase import Kernel
 from .coqtop import CoqtopWrapper
+from .renderer import Renderer, HTML_ROLLBACK_MESSAGE
+
 
 __version__ = '1.3.0'
 
@@ -17,57 +18,6 @@ __version__ = '1.3.0'
 LANGUAGE_VERSION_PATTERN = re.compile(r'version (\d+(\.\d+)+)')
 
 ROLLBACK_COMM_TARGET_NAME = "coq_kernel.rollback_comm"
-
-with open(os.path.join(os.path.dirname(__file__), "rollback_comm.js"), 'r') as f:
-    HTML_ROLLBACK_COMM_DEFINITION = """<script>{}</script>""".format(f.read())
-
-HTML_OUTPUT_TEMPLATE = """
-<div id="output_{0}">
-    <pre>{1}</pre>
-    <br>
-    <i class="fa-check fa text-success"></i>
-    <span>{2}</span>
-</div>
-"""
-
-HTML_ERROR_OUTPUT_TEMPLATE = """
-<div id="output_{0}">
-    <pre>{1}</pre>
-    <br>
-    <i class="fa-times fa text-danger"></i>
-    <span>{2}</span>
-</div>
-"""
-
-HTML_ROLLBACK_MESSAGE_TEMPLATE = """
-<div id="rollback_message_{0}" style="display: none">
-    <i class="fa-exclamation-circle fa text-info"></i>
-    <span>Cell rolled back.</span>
-</div>
-"""
-
-HTML_ROLLBACK_MESSAGE = """
-<div>
-    <i class="fa-exclamation-circle fa text-info"></i>
-    <span>Cell rolled back.</span>
-</div>
-"""
-
-HTML_ROLLBACK_BUTTON_TEMPLATE = """
-<div style="position: relative;">
-    <button id="rollblack_button_{0}" class="btn btn-default btn-xs" style="display: none; margin-top: 5px;" onclick="coq_kernel_rollback_comm_{0}.rollback()">
-        <i class="fa-step-backward fa"></i>
-        <span class="toolbar-btn-label">Rollback cell</span>
-    </button>
-</div>
-"""
-
-HTML_ROLLBACK_COMM_INIT_TEMPLATE = """
-<script>
-    var coq_kernel_rollback_comm_{0} = new CoqKernelRollbackComm('{0}');
-    coq_kernel_rollback_comm_{0}.init();
-</script>
-"""
 
 
 class CellRecord:
@@ -132,6 +82,7 @@ class CoqKernel(Kernel):
         Kernel.__init__(self, **kwargs)
         self._coqtop = CoqtopWrapper(self, self.coqtop_args)
         self._journal = CellJournal(self)
+        self._renderer = Renderer()
         self._comms = {}
         for msg_type in ['comm_open', 'comm_msg', 'comm_close']:
             self.shell_handlers[msg_type] = getattr(self, msg_type)
@@ -252,37 +203,11 @@ class CoqKernel(Kernel):
         self.session.send(self.iopub_socket, "update_display_data", content, parent_header, None, None, None, None, None)
 
     def _send_execute_result(self, raw_outputs, footer_message, display_id, rolled_back):
-        text = self._render_text_result(raw_outputs, footer_message)
-        html = self._render_html_result(raw_outputs, footer_message, display_id, not rolled_back)
+        text = self._renderer.render_text_result(raw_outputs, footer_message)
+        html = self._renderer.render_html_result(raw_outputs, footer_message, display_id, not rolled_back)
         content = self._build_display_data_content(text, html, display_id)
         content['execution_count'] = self.execution_count
         self.send_response(self.iopub_socket, 'execute_result', content)
-
-    def _render_text_result(self, raw_outputs, footer_message):
-        cell_output = "\n".join(raw_outputs)
-        cell_output = cell_output.rstrip("\n\r\t ").lstrip("\n\r")
-
-        # strip extra tag formating
-        # TODO this is a temporary solution that won't be relevant after implementing ide xml protocol
-        for tag in ["warning", "infomsg"]:
-            cell_output = cell_output.replace("<{}>".format(tag), "").replace("</{}>".format(tag), "")
-
-        if footer_message is not None:
-            cell_output += "\n\n" + footer_message
-
-        return cell_output
-
-    def _render_html_result(self, raw_outputs, footer_message, display_id, success_output):
-        if success_output:
-            html = HTML_OUTPUT_TEMPLATE.format(display_id, self._render_text_result(raw_outputs, None), footer_message)
-            html += HTML_ROLLBACK_MESSAGE_TEMPLATE.format(display_id)
-            html += HTML_ROLLBACK_BUTTON_TEMPLATE.format(display_id)
-            html += HTML_ROLLBACK_COMM_DEFINITION
-            html += HTML_ROLLBACK_COMM_INIT_TEMPLATE.format(display_id)
-        else:
-            html = HTML_ERROR_OUTPUT_TEMPLATE.format(display_id, self._render_text_result(raw_outputs, None), footer_message)
-
-        return html
 
 
 # This entry point is used for debug only:
