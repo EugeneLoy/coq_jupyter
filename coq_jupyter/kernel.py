@@ -70,6 +70,15 @@ HTML_ROLLBACK_COMM_INIT_TEMPLATE = """
 """
 
 
+class CellRecord:
+
+    def __init__(self, state_label_before, state_label_after, display_id, rolled_back, parent_header):
+        self.state_label_before = state_label_before
+        self.state_label_after = state_label_after
+        self.display_id = display_id
+        self.rolled_back = rolled_back
+        self.parent_header = parent_header
+
 class CellJournal:
 
     def __init__(self, kernel):
@@ -77,17 +86,17 @@ class CellJournal:
         self.history = []
 
     def add(self, state_label_before, state_label_after, display_id, rolled_back, parent_header):
-        self.history.append([state_label_before, state_label_after, display_id, rolled_back, parent_header])
+        self.history.append(CellRecord(state_label_before, state_label_after, display_id, rolled_back, parent_header))
 
     def find_by_display_id(self, display_id):
-        result = list(filter(lambda r: r[2] == display_id, self.history))
+        result = list(filter(lambda r: r.display_id == display_id, self.history))
         if len(result) == 1:
             return result[0]
         else:
             return None
 
-    def find_rolled_back(self, state_label_before):
-        return list(filter(lambda r: int(r[0]) > int(state_label_before) and not r[3], self.history))
+    def find_affected_by_roll_back(self, state_label_before):
+        return list(filter(lambda r: int(r.state_label_before) > int(state_label_before) and not r.rolled_back, self.history))
 
 class CoqKernel(Kernel):
     implementation = 'coq'
@@ -176,7 +185,7 @@ class CoqKernel(Kernel):
     def _handle_request_rollback_sate(self, comm_id, msg):
         cell_record = self._journal.find_by_display_id(self._comms[comm_id])
         if cell_record is not None:
-            self._send_rollback_state_comm_msg(comm_id, cell_record[3]) # TODO
+            self._send_rollback_state_comm_msg(comm_id, cell_record.rolled_back)
         else:
             self.log.info("Unexpected (possibly leftover) comm_msg, msg: {}".format(repr(msg)))
 
@@ -185,23 +194,19 @@ class CoqKernel(Kernel):
         comm_id = msg["content"]["comm_id"]
         display_id = self._comms[comm_id]
         cell_record = self._journal.find_by_display_id(display_id)
-        rolled_back = cell_record[3]
 
-        if cell_record is not None and not rolled_back:
-            state_label_before = cell_record[0]
-            self._coqtop.eval("BackTo {}.".format(state_label_before)) # TODO check for error?
+        if cell_record is not None and not cell_record.rolled_back:
+            self._coqtop.eval("BackTo {}.".format(cell_record.state_label_before)) # TODO check for error?
 
-            for record in [cell_record] + self._journal.find_rolled_back(state_label_before):
+            for record in [cell_record] + self._journal.find_affected_by_roll_back(cell_record.state_label_before):
                 # mark cell as rolled back
-                record[3] = True
+                record.rolled_back= True
 
-                # update rolled cell content
-                display_id = record[2]
-                parent_header = record[4]
-                self._send_rollback_update_display_data(display_id, parent_header)
+                # update content of rolled back cell
+                self._send_rollback_update_display_data(record.display_id, record.parent_header)
 
                 # notify any relevant rollback comms
-                for comm_id in [c for (c, d) in self._comms.items() if d == display_id]:
+                for comm_id in [c for (c, d) in self._comms.items() if d == record.display_id]:
                     self._send_rollback_state_comm_msg(comm_id, True)
 
         else:
