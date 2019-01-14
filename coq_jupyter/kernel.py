@@ -116,8 +116,9 @@ class CoqKernel(Kernel):
 
                 self._journal.add(state_label_before, state_label_after, display_id, rolled_back, self._parent_header)
 
-                self.log.info("Sending 'execute_result', evaluation result: \n{}\n".format(repr(result)))
-                self._send_execute_result(raw_outputs, footer_message, display_id, rolled_back)
+                if not silent:
+                    self.log.info("Sending 'execute_result', evaluation result: \n{}\n".format(repr(result)))
+                    self._send_execute_result(raw_outputs, footer_message, display_id, rolled_back)
             else:
                 self.log.info("code is empty - skipping evaluation and sending results.")
 
