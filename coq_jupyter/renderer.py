@@ -57,12 +57,15 @@ class Renderer:
 
     def render_text_result(self, raw_outputs, footer_message):
         cell_output = "\n".join(raw_outputs)
-        cell_output = cell_output.rstrip("\n\r\t ").lstrip("\n\r")
 
         # strip extra tag formating
         # TODO this is a temporary solution that won't be relevant after implementing ide xml protocol
         for tag in ["warning", "infomsg"]:
             cell_output = cell_output.replace("<{}>".format(tag), "").replace("</{}>".format(tag), "")
+
+        cell_output = cell_output.replace("(dependent evars: (printing disabled) )", "")
+
+        cell_output = cell_output.rstrip("\n\r\t ").lstrip("\n\r")
 
         if footer_message is not None:
             cell_output += "\n\n" + footer_message
