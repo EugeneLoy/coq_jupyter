@@ -228,10 +228,3 @@ class CoqKernel(Kernel):
         content = self._build_display_data_content(text, html, display_id)
         content['execution_count'] = self.execution_count
         self.send_response(self.iopub_socket, 'execute_result', content)
-
-
-# This entry point is used for debug only:
-if __name__ == '__main__':
-    from sys import argv
-    from ipykernel.kernelapp import IPKernelApp
-    IPKernelApp.launch_instance(kernel_class=CoqKernel, args=argv)

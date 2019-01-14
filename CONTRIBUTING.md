@@ -1,7 +1,7 @@
 To run kernel from source (with DEBUG logging level):
 
     pip install --user jupyter-console
-    python coq_jupyter/kernel.py --ConnectionFileMixin.connection_file=coq_kernel.json --Application.log_level=DEBUG
+    python main.py --ConnectionFileMixin.connection_file=coq_kernel.json --Application.log_level=DEBUG
 
 ... and then connect to kernel using:
 
