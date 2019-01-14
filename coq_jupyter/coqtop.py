@@ -64,10 +64,10 @@ class CoqtopWrapper:
                 self._expect_coqtop_prompt()
 
                 raw_outputs = []
-                footer_message = "Cell evaluation error: some of the commands resulted in error. Cell rolled back."
+                status_message = "Cell evaluation error: some of the commands resulted in error. Cell rolled back."
                 for (_, raw_output, simplified_output, _) in outputs:
                     if eval_checkpoint_command in simplified_output:
-                        footer_message = "Cell evaluation error: last cell command is incomplete or malformed. Cell rolled back."
+                        status_message = "Cell evaluation error: last cell command is incomplete or malformed. Cell rolled back."
                         break
 
                     if checkpoint_marker in simplified_output:
@@ -75,7 +75,7 @@ class CoqtopWrapper:
 
                     raw_outputs.append(simplified_output)
 
-                return (raw_outputs, footer_message, True, state_label_before, state_label_before)
+                return (raw_outputs, status_message, True, state_label_before, state_label_before)
 
             # rollback issued hidden commands
             # TODO not 100% sure if this rollback is really needed. Leave it for now.
@@ -90,11 +90,11 @@ class CoqtopWrapper:
             del raw_outputs[-hidden_commands_issued] # omit checkpoint marker output
 
             if self._coqtop.match.group("proving") != "":
-                footer_message = "Cell evaluated, proving: {}.".format(self._coqtop.match.group("proving"))
+                status_message = "Cell evaluated, proving: {}.".format(self._coqtop.match.group("proving"))
             else:
-                footer_message = "Cell evaluated."
+                status_message = "Cell evaluated."
 
-            return (raw_outputs, footer_message, False, state_label_before, self._state_label)
+            return (raw_outputs, status_message, False, state_label_before, self._state_label)
 
         except ExceptionPexpect as e:
             raise_with_traceback(CoqtopError("Cause: {}".format(repr(e))))

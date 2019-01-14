@@ -111,14 +111,14 @@ class CoqKernel(Kernel):
             if code.strip("\n\r\t ") != "":
 
                 result = shutdown_on_coqtop_error(lambda self: self._coqtop.eval(code))(self)
-                (raw_outputs, footer_message, rolled_back, state_label_before, state_label_after) = result
+                (raw_outputs, status_message, rolled_back, state_label_before, state_label_after) = result
                 display_id = str(uuid4()).replace("-", "")
 
                 self._journal.add(state_label_before, state_label_after, display_id, rolled_back, self._parent_header)
 
                 if not silent:
                     self.log.info("Sending 'execute_result', evaluation result: \n{}\n".format(repr(result)))
-                    self._send_execute_result(raw_outputs, footer_message, display_id, rolled_back)
+                    self._send_execute_result(raw_outputs, status_message, display_id, rolled_back)
             else:
                 self.log.info("code is empty - skipping evaluation and sending results.")
 
@@ -222,9 +222,9 @@ class CoqKernel(Kernel):
         content = self._build_display_data_content(text, HTML_ROLLBACK_MESSAGE, display_id)
         self.session.send(self.iopub_socket, "update_display_data", content, parent_header, None, None, None, None, None)
 
-    def _send_execute_result(self, raw_outputs, footer_message, display_id, rolled_back):
-        text = self._renderer.render_text_result(raw_outputs, footer_message)
-        html = self._renderer.render_html_result(raw_outputs, footer_message, display_id, not rolled_back)
+    def _send_execute_result(self, raw_outputs, status_message, display_id, rolled_back):
+        text = self._renderer.render_text_result(raw_outputs, status_message)
+        html = self._renderer.render_html_result(raw_outputs, status_message, display_id, not rolled_back)
         content = self._build_display_data_content(text, html, display_id)
         content['execution_count'] = self.execution_count
         self.send_response(self.iopub_socket, 'execute_result', content)
