@@ -3,12 +3,13 @@ from __future__ import unicode_literals
 import re
 import sys
 import traceback
+import time
 
 from traitlets import Unicode
 from subprocess import check_output
 from uuid import uuid4
 from ipykernel.kernelbase import Kernel
-from .coqtop import CoqtopWrapper
+from .coqtop import CoqtopWrapper, CoqtopError
 from .renderer import Renderer, HTML_ROLLBACK_MESSAGE
 
 
@@ -29,6 +30,7 @@ class CellRecord:
         self.rolled_back = rolled_back
         self.parent_header = parent_header
 
+
 class CellJournal:
 
     def __init__(self, kernel):
@@ -47,6 +49,21 @@ class CellJournal:
 
     def find_affected_by_roll_back(self, state_label_before):
         return list(filter(lambda r: int(r.state_label_before) > int(state_label_before) and not r.rolled_back, self.history))
+
+
+def shutdown_on_coqtop_error(function):
+    def wrapper(self, *args, **kwargs):
+        try:
+            return function(self, *args, **kwargs)
+        except CoqtopError:
+            self.log.exception("CoqtopError has occured. Scheduling shutdown.")
+            from tornado import ioloop
+            loop = ioloop.IOLoop.current()
+            loop.add_timeout(time.time() + 0.1, loop.stop)
+            raise
+
+    return wrapper
+
 
 class CoqKernel(Kernel):
     implementation = 'coq'
@@ -78,6 +95,7 @@ class CoqKernel(Kernel):
     coqtop_args = Unicode().tag(config=True)
 
 
+    @shutdown_on_coqtop_error
     def __init__(self, **kwargs):
         Kernel.__init__(self, **kwargs)
         self._coqtop = CoqtopWrapper(self, self.coqtop_args)
@@ -92,7 +110,7 @@ class CoqKernel(Kernel):
             self.log.info("Processing 'execute_request', code: \n{}\n".format(repr(code)))
             if code.strip("\n\r\t ") != "":
 
-                result = self._coqtop.eval(code)
+                result = shutdown_on_coqtop_error(lambda self: self._coqtop.eval(code))(self)
                 (raw_outputs, footer_message, rolled_back, state_label_before, state_label_after) = result
                 display_id = str(uuid4()).replace("-", "")
 
@@ -116,6 +134,7 @@ class CoqKernel(Kernel):
         else:
             self.log.error("Unexpected comm_open, msg: {}".format(repr(msg)))
 
+    @shutdown_on_coqtop_error
     def comm_msg(self, stream, ident, msg):
         content = msg["content"]
         comm_id = content["comm_id"]
@@ -147,7 +166,7 @@ class CoqKernel(Kernel):
         cell_record = self._journal.find_by_display_id(display_id)
 
         if cell_record is not None and not cell_record.rolled_back:
-            self._coqtop.eval("BackTo {}.".format(cell_record.state_label_before)) # TODO check for error?
+            self._coqtop.eval("BackTo {}.".format(cell_record.state_label_before))
 
             for record in [cell_record] + self._journal.find_affected_by_roll_back(cell_record.state_label_before):
                 # mark cell as rolled back

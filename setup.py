@@ -18,6 +18,7 @@ setup(
         'jupyter_client',
         'IPython',
         'ipykernel',
+        'future',
         'pexpect>=4.0'
     ],
     classifiers=[
