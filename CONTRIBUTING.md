@@ -10,6 +10,7 @@ To run tests (this also installs kernel from source):
     python -m coq_jupyter.install
     python test/kernel_test.py
 
+---
 
 To run kernel from source (with DEBUG logging level):
 
@@ -19,11 +20,13 @@ To run kernel from source (with DEBUG logging level):
 
     jupyter console --existing coq_kernel.json
 
+---
 
 To build:
 
     python setup.py sdist bdist_wheel
 
+---
 
 To publish (to TestPyPI):
 
