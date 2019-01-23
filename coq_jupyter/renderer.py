@@ -7,7 +7,7 @@ HTML_OUTPUT_TEMPLATE = """
     <pre>{1}</pre>
     <br>
     <i class="fa-check fa text-success"></i>
-    <span>{2}</span>
+    <span>Cell evaluated.</span>
 </div>
 """
 
@@ -16,7 +16,7 @@ HTML_ERROR_OUTPUT_TEMPLATE = """
     <pre>{1}</pre>
     <br>
     <i class="fa-times fa text-danger"></i>
-    <span>{2}</span>
+    <span>Error while evaluating cell. Cell rolled back.</span>
 </div>
 """
 
@@ -55,31 +55,18 @@ with open(os.path.join(os.path.dirname(__file__), "rollback_comm.js"), 'r') as f
 
 class Renderer:
 
-    def render_text_result(self, raw_outputs, status_message):
-        cell_output = "\n".join(raw_outputs)
-
-        # strip extra tag formating
-        # TODO this is a temporary solution that won't be relevant after implementing ide xml protocol
-        for tag in ["warning", "infomsg"]:
-            cell_output = cell_output.replace("<{}>".format(tag), "").replace("</{}>".format(tag), "")
-
-        cell_output = cell_output.replace("(dependent evars: (printing disabled) )", "")
-
-        cell_output = cell_output.rstrip("\n\r\t ").lstrip("\n\r")
-
-        if status_message is not None:
-            cell_output += "\n\n" + status_message
-
+    def render_text_result(self, outputs):
+        cell_output = "\n\n".join(outputs)
         return cell_output
 
-    def render_html_result(self, raw_outputs, status_message, display_id, success_output):
+    def render_html_result(self, outputs, display_id, success_output):
         if success_output:
-            html = HTML_OUTPUT_TEMPLATE.format(display_id, self.render_text_result(raw_outputs, None), status_message)
+            html = HTML_OUTPUT_TEMPLATE.format(display_id, self.render_text_result(outputs))
             html += HTML_ROLLBACK_MESSAGE_TEMPLATE.format(display_id)
             html += HTML_ROLLBACK_BUTTON_TEMPLATE.format(display_id)
             html += HTML_ROLLBACK_COMM_DEFINITION
             html += HTML_ROLLBACK_COMM_INIT_TEMPLATE.format(display_id)
         else:
-            html = HTML_ERROR_OUTPUT_TEMPLATE.format(display_id, self.render_text_result(raw_outputs, None), status_message)
+            html = HTML_ERROR_OUTPUT_TEMPLATE.format(display_id, self.render_text_result(outputs))
 
         return html

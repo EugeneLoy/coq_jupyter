@@ -23,11 +23,11 @@ ROLLBACK_COMM_TARGET_NAME = "coq_kernel.rollback_comm"
 
 class CellRecord:
 
-    def __init__(self, state_label_before, state_label_after, display_id, rolled_back, parent_header):
+    def __init__(self, state_label_before, evaluated, rolled_back, display_id, parent_header):
         self.state_label_before = state_label_before
-        self.state_label_after = state_label_after
-        self.display_id = display_id
+        self.evaluated = evaluated
         self.rolled_back = rolled_back
+        self.display_id = display_id
         self.parent_header = parent_header
 
 
@@ -37,8 +37,8 @@ class CellJournal:
         self.log = kernel.log # TODO
         self.history = []
 
-    def add(self, state_label_before, state_label_after, display_id, rolled_back, parent_header):
-        self.history.append(CellRecord(state_label_before, state_label_after, display_id, rolled_back, parent_header))
+    def add(self, state_label_before, evaluated, rolled_back, display_id, parent_header):
+        self.history.append(CellRecord(state_label_before, evaluated, rolled_back, display_id, parent_header))
 
     def find_by_display_id(self, display_id):
         result = list(filter(lambda r: r.display_id == display_id, self.history))
@@ -47,7 +47,7 @@ class CellJournal:
         else:
             return None
 
-    def find_affected_by_roll_back(self, state_label_before):
+    def find_rolled_back_transitively(self, state_label_before):
         return list(filter(lambda r: int(r.state_label_before) > int(state_label_before) and not r.rolled_back, self.history))
 
 
@@ -111,14 +111,13 @@ class CoqKernel(Kernel):
             if code.strip("\n\r\t ") != "":
 
                 result = shutdown_on_coqtop_error(lambda self: self._coqtop.eval(code))(self)
-                (raw_outputs, status_message, rolled_back, state_label_before, state_label_after) = result
+                (state_label_before, evaluated, outputs) = result
                 display_id = str(uuid4()).replace("-", "")
-
-                self._journal.add(state_label_before, state_label_after, display_id, rolled_back, self._parent_header)
+                self._journal.add(state_label_before, evaluated, False, display_id, self._parent_header)
 
                 if not silent:
                     self.log.info("Sending 'execute_result', evaluation result: \n{}\n".format(repr(result)))
-                    self._send_execute_result(raw_outputs, status_message, display_id, rolled_back)
+                    self._send_execute_result(outputs, display_id, evaluated)
             else:
                 self.log.info("code is empty - skipping evaluation and sending results.")
 
@@ -169,7 +168,7 @@ class CoqKernel(Kernel):
         if cell_record is not None and not cell_record.rolled_back:
             self._coqtop.eval("BackTo {}.".format(cell_record.state_label_before))
 
-            for record in [cell_record] + self._journal.find_affected_by_roll_back(cell_record.state_label_before):
+            for record in [cell_record] + self._journal.find_rolled_back_transitively(cell_record.state_label_before):
                 # mark cell as rolled back
                 record.rolled_back= True
 
@@ -222,9 +221,9 @@ class CoqKernel(Kernel):
         content = self._build_display_data_content(text, HTML_ROLLBACK_MESSAGE, display_id)
         self.session.send(self.iopub_socket, "update_display_data", content, parent_header, None, None, None, None, None)
 
-    def _send_execute_result(self, raw_outputs, status_message, display_id, rolled_back):
-        text = self._renderer.render_text_result(raw_outputs, status_message)
-        html = self._renderer.render_html_result(raw_outputs, status_message, display_id, not rolled_back)
+    def _send_execute_result(self, outputs, display_id, evaluated):
+        text = self._renderer.render_text_result(outputs)
+        html = self._renderer.render_html_result(outputs, display_id, evaluated)
         content = self._build_display_data_content(text, html, display_id)
         content['execution_count'] = self.execution_count
         self.send_response(self.iopub_socket, 'execute_result', content)
