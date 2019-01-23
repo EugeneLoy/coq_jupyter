@@ -10,7 +10,7 @@ from subprocess import check_output
 from uuid import uuid4
 from ipykernel.kernelbase import Kernel
 from .coqtop import CoqtopWrapper, CoqtopError
-from .renderer import Renderer, HTML_ROLLBACK_MESSAGE
+from .renderer import Renderer, HTML_ROLL_BACK_MESSAGE, TEXT_ROLL_BACK_MESSAGE
 
 
 __version__ = '1.3.0'
@@ -18,7 +18,7 @@ __version__ = '1.3.0'
 
 LANGUAGE_VERSION_PATTERN = re.compile(r'version (\d+(\.\d+)+)')
 
-ROLLBACK_COMM_TARGET_NAME = "coq_kernel.rollback_comm"
+CELL_COMM_TARGET_NAME = "coq_kernel.cell_comm"
 
 
 class CellRecord:
@@ -128,7 +128,7 @@ class CoqKernel(Kernel):
 
     def comm_open(self, stream, ident, msg):
         content = msg["content"]
-        if content["target_name"] == ROLLBACK_COMM_TARGET_NAME:
+        if content["target_name"] == CELL_COMM_TARGET_NAME:
             self._comms[content["comm_id"]] = content["data"]["display_id"]
             self.log.info("Comm opened, msg: {}".format(repr(msg)))
         else:
@@ -139,10 +139,10 @@ class CoqKernel(Kernel):
         content = msg["content"]
         comm_id = content["comm_id"]
         if comm_id in self._comms:
-            if content["data"]["comm_msg_type"] == "request_rollback_sate":
-                self._handle_request_rollback_sate(comm_id, msg)
-            elif content["data"]["comm_msg_type"] == "rollback":
-                self._handle_rollback(msg)
+            if content["data"]["comm_msg_type"] == "request_cell_sate":
+                self._handle_request_cell_sate(comm_id, msg)
+            elif content["data"]["comm_msg_type"] == "roll_back":
+                self._handle_roll_back(msg)
             else:
                 self.log.error("Unexpected comm_msg, msg: {}".format(repr(msg)))
         else:
@@ -152,32 +152,32 @@ class CoqKernel(Kernel):
         del self._comms[msg["content"]["comm_id"]]
         self.log.info("Comm closed, msg: {}".format(repr(msg)))
 
-    def _handle_request_rollback_sate(self, comm_id, msg):
+    def _handle_request_cell_sate(self, comm_id, msg):
         cell_record = self._journal.find_by_display_id(self._comms[comm_id])
         if cell_record is not None:
-            self._send_rollback_state_comm_msg(comm_id, cell_record.rolled_back)
+            self._send_cell_state_comm_msg(comm_id, cell_record.evaluated, cell_record.rolled_back)
         else:
             self.log.info("Unexpected (possibly leftover) comm_msg, msg: {}".format(repr(msg)))
 
-    def _handle_rollback(self, msg):
-        self.log.info("rollback, msg: {}".format(repr(msg)))
+    def _handle_roll_back(self, msg):
+        self.log.info("roll back, msg: {}".format(repr(msg)))
         comm_id = msg["content"]["comm_id"]
         display_id = self._comms[comm_id]
         cell_record = self._journal.find_by_display_id(display_id)
 
         if cell_record is not None and not cell_record.rolled_back:
-            self._coqtop.eval("BackTo {}.".format(cell_record.state_label_before))
+            self._coqtop.roll_back_to(cell_record.state_label_before)
 
             for record in [cell_record] + self._journal.find_rolled_back_transitively(cell_record.state_label_before):
                 # mark cell as rolled back
                 record.rolled_back= True
 
                 # update content of rolled back cell
-                self._send_rollback_update_display_data(record.display_id, record.parent_header)
+                self._send_roll_back_update_display_data(record.display_id, record.parent_header)
 
-                # notify any relevant rollback comms
+                # notify any relevant cell comms
                 for comm_id in [c for (c, d) in self._comms.items() if d == record.display_id]:
-                    self._send_rollback_state_comm_msg(comm_id, True)
+                    self._send_cell_state_comm_msg(comm_id, record.evaluated, record.rolled_back)
 
         else:
             self.log.info("Unexpected (possibly leftover) comm_msg, msg: {}".format(repr(msg)))
@@ -206,19 +206,19 @@ class CoqKernel(Kernel):
             'transient': { 'display_id': display_id }
         }
 
-    def _send_rollback_state_comm_msg(self, comm_id, rolled_back):
+    def _send_cell_state_comm_msg(self, comm_id, evaluated, rolled_back):
         content = {
             "comm_id": comm_id,
             "data": {
-                "comm_msg_type": "rollback_state",
+                "comm_msg_type": "cell_state",
+                "evaluated": evaluated,
                 "rolled_back": rolled_back
             }
         }
         self.session.send(self.iopub_socket, "comm_msg", content, None, None, None, None, None, None)
 
-    def _send_rollback_update_display_data(self, display_id, parent_header):
-        text = "Cell rolled back."
-        content = self._build_display_data_content(text, HTML_ROLLBACK_MESSAGE, display_id)
+    def _send_roll_back_update_display_data(self, display_id, parent_header):
+        content = self._build_display_data_content(TEXT_ROLL_BACK_MESSAGE, HTML_ROLL_BACK_MESSAGE, display_id)
         self.session.send(self.iopub_socket, "update_display_data", content, parent_header, None, None, None, None, None)
 
     def _send_execute_result(self, outputs, display_id, evaluated):

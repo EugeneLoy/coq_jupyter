@@ -1,2 +1,2 @@
 include coq_jupyter/kernel.js
-include coq_jupyter/rollback_comm.js
+include coq_jupyter/cell_comm.js

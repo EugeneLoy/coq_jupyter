@@ -588,9 +588,9 @@
         icon: 'fa-step-backward',
         cmd: 'Rollback cell',
         help: 'Rollback cell',
-        help_index: 'zz', // TODO not shure what to set here
+        help_index: 'zz', // TODO not sure what to set here
         handler: function () {
-          $(".cell.selected .enabled_rollback_button, .cell.jupyter-soft-selected .enabled_rollback_button").triggerHandler("click");
+          $(".cell.selected .enabled_roll_back_button, .cell.jupyter-soft-selected .enabled_roll_back_button").triggerHandler("click");
         }
       };
       var prefix = 'coq_jupyter';

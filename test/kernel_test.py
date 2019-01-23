@@ -186,7 +186,7 @@ class KernelTests(jupyter_kernel_test.KernelTests):
             self.assertIn("cell rolled back", result.lower(), "fixture: {}".format(repr(fixture[f])))
             self.assertIn(expected_error_message, result, "fixture: {}".format(repr(fixture[f])))
 
-            # verify rollback
+            # verify roll back
             result = self._execute_cell("Print All.")
             self.assertIn(commited_definition[0], result, "fixture: {}".format(repr(fixture[f])))
             self.assertNotIn(invalid_definition, result, "fixture: {}".format(repr(fixture[f])))
