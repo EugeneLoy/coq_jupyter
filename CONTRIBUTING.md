@@ -1,6 +1,6 @@
 This document assumes that you have `cd`ed into root of the repo and installed the following:
 
-    pip install --upgrade jupyter-console setuptools wheel twine jupyter_kernel_test>=0.3
+    pip install --upgrade jupyter-console setuptools wheel twine "jupyter_kernel_test>=0.3"
 
 ---
 
