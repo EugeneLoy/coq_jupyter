@@ -6,6 +6,7 @@ import re
 import xml.etree.ElementTree as ET
 from future.utils import raise_with_traceback
 from collections import deque
+from pexpect.exceptions import ExceptionPexpect
 
 
 INIT_COMMAND = '<call val="Init"> <option val="none"/> </call>'
@@ -39,12 +40,16 @@ class CoqtopWrapper:
     def __init__(self, kernel, coqtop_args):
         try:
             self.log = kernel.log
-            self._coqtop = pexpect.spawn(
-                "coqtop -toploop coqidetop -main-channel stdfds {}".format(coqtop_args),
-                echo=False,
-                encoding="utf-8",
-                codec_errors="replace"
-            )
+            spawn_args = {
+                "echo": False,
+                "encoding": "utf-8",
+                "codec_errors": "replace"
+            }
+
+            try:
+                self._coqtop = pexpect.spawn("coqidetop -main-channel stdfds {}".format(coqtop_args), **spawn_args)
+            except ExceptionPexpect:
+                self._coqtop = pexpect.spawn("coqtop -toploop coqidetop -main-channel stdfds {}".format(coqtop_args), **spawn_args)
 
             (reply, _) = self._execute_command(INIT_COMMAND)
             self._tip = reply.find("state_id").get("val")
