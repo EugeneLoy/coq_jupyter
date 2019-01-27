@@ -8,26 +8,25 @@ env:
   - COQ_VERSION=8.6.1 PYTHON_VERSION=3
   - COQ_VERSION=8.7.2 PYTHON_VERSION=3
   - COQ_VERSION=8.8.2 PYTHON_VERSION=3
-  - COQ_VERSION=8.9+beta1 PYTHON_VERSION=3
+  - COQ_VERSION=8.9.0 PYTHON_VERSION=3
   - COQ_VERSION=8.6.1 PYTHON_VERSION=2
   - COQ_VERSION=8.7.2 PYTHON_VERSION=2
   - COQ_VERSION=8.8.2 PYTHON_VERSION=2
-  - COQ_VERSION=8.9+beta1 PYTHON_VERSION=2
+  - COQ_VERSION=8.9.0 PYTHON_VERSION=2
 
 install:
   - sudo add-apt-repository -y ppa:jgross-h/many-coq-versions
   - sudo apt-get update
   - sudo apt-get install -y coq-$COQ_VERSION
-  - sudo apt-get install -y python3-pip 
+  - sudo apt-get install -y python3-pip
   - if [ $PYTHON_VERSION = 2 ]; then sudo apt-get install -y python-pip; fi
   - pip3 install --user setuptools wheel
   - pip3 install --user --upgrade 'jupyter_kernel_test>=0.3'
-  
+
 script:
   - python3 setup.py sdist bdist_wheel
   - if [ $PYTHON_VERSION = 3 ]; then pip3 install --user --upgrade --force-reinstall dist/coq_jupyter-*.tar.gz; fi
   - if [ $PYTHON_VERSION = 3 ]; then python3 -m coq_jupyter.install; fi
   - if [ $PYTHON_VERSION = 2 ]; then pip install --user --upgrade --force-reinstall dist/coq_jupyter-*.tar.gz; fi
   - if [ $PYTHON_VERSION = 2 ]; then python -m coq_jupyter.install; fi
-  - python3 test/kernel_test.py
-
+  - python3 test/kernel_test.py -v
