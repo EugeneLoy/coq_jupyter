@@ -23,6 +23,8 @@ class KernelTests(jupyter_kernel_test.KernelTests):
 
         return output_msgs[0]['content']['data']['text/plain']
 
+    def setUp(self):
+        self._execute_cell("Reset Initial.")
 
     def test_coq_jupyter____executing_empty_code____should_not_print_anything(self):
         self.flush_channels()
@@ -48,13 +50,6 @@ class KernelTests(jupyter_kernel_test.KernelTests):
         result = self._execute_cell(command)
         self.assertNotIn(command, result)
 
-    def test_coq_jupyter____executing_one_command____does_not_print_hidden_checkpoint_command_and_its_result(self):
-        result = self._execute_cell("Check True.")
-        hidden_checkpoint_command_part = "Compute"
-        hidden_checkpoint_command_result_part = "nat"
-        self.assertNotIn(hidden_checkpoint_command_part, result)
-        self.assertNotIn(hidden_checkpoint_command_result_part, result)
-
     def test_coq_jupyter____executing_compute_command_when_not_proving____does_not_print_proving_context(self):
         (expected_result, command) = self._build_sum_command(100, 3)
         result = self._execute_cell(command)
@@ -71,27 +66,27 @@ class KernelTests(jupyter_kernel_test.KernelTests):
     def test_coq_jupyter____executing_commands_when_proving____prints_proving_context(self):
         result = self._execute_cell("Theorem t1 : True.")
         self.assertIn("1 subgoal", result)
-        self.assertIn("proving: t1", result)
+        self.assertIn("Proving: t1", result)
 
         result = self._execute_cell(self._build_sum_command(100, 6)[1])
         self.assertIn("1 subgoal", result)
-        self.assertIn("proving: t1", result)
+        self.assertIn("Proving: t1", result)
 
         result = self._execute_cell("Proof. pose (i1 := I).")
         self.assertIn("1 subgoal", result)
         self.assertIn("i1 := I : True", result)
-        self.assertIn("proving: t1", result)
+        self.assertIn("Proving: t1", result)
 
         result = self._execute_cell(self._build_sum_command(100, 7)[1])
         self.assertIn("1 subgoal", result)
         self.assertIn("i1 := I : True", result)
-        self.assertIn("proving: t1", result)
+        self.assertIn("Proving: t1", result)
 
         result = self._execute_cell("exact i1. Qed.")
         self.assertNotIn("1 subgoal", result)
         self.assertNotIn("No more subgoals", result)
         self.assertNotIn("i1 := I : True", result)
-        self.assertNotIn("proving:", result)
+        self.assertNotIn("Proving:", result)
 
         result = self._execute_cell(self._build_sum_command(100, 8)[1])
         self.assertNotIn("1 subgoal", result)
@@ -99,36 +94,20 @@ class KernelTests(jupyter_kernel_test.KernelTests):
         self.assertNotIn("i1 := I : True", result)
         self.assertNotIn("proving:", result)
 
-    def test_coq_jupyter____when_proving____does_not_print_hidden_commands_and_their_results(self):
-        result = self._execute_cell("Theorem t2 : True.")
-
-        hidden_checkpoint_command_part = "Compute"
-        hidden_checkpoint_command_result_part = "nat"
-        hidden_show_command = "Show."
-
-        self.assertNotIn(hidden_checkpoint_command_part, result)
-        self.assertNotIn(hidden_checkpoint_command_result_part, result)
-        self.assertNotIn(hidden_show_command, result)
-        # Note: the result of Show command actually should be shown, so there is no need to verify its absense
-
-        self._execute_cell("Proof. exact I. Qed.") # TODO move cleanup to teardown
-
     def test_coq_jupyter____when_proving____prints_most_recent_proving_context_once(self):
         result = self._execute_cell("Theorem t3 : bool. Proof. pose (b1 := true). pose (b2 := false).")
-        self.assertEqual(result.count("proving: t3"), 1, "result: " + repr(result))
+        self.assertEqual(result.count("Proving: t3"), 1, "result: " + repr(result))
         self.assertEqual(result.count("1 subgoal"), 1, "result: " + repr(result))
         self.assertEqual(result.count("No more subgoals"), 0, "result: " + repr(result))
         self.assertEqual(result.count("b1 := true : bool"), 1, "result: " + repr(result))
         self.assertEqual(result.count("b2 := false : bool"), 1, "result: " + repr(result))
 
         result = self._execute_cell("exact b2.")
-        self.assertEqual(result.count("proving: t3"), 1, "result: " + repr(result))
+        self.assertEqual(result.count("Proving: t3"), 1, "result: " + repr(result))
         self.assertEqual(result.count("1 subgoal"), 0, "result: " + repr(result))
         self.assertEqual(result.count("No more subgoals"), 1, "result: " + repr(result))
         self.assertEqual(result.count("b1 := true : bool"), 0, "result: " + repr(result))
         self.assertEqual(result.count("b2 := false : bool"), 0, "result: " + repr(result))
-
-        self._execute_cell("Qed.") # TODO move cleanup to teardown
 
     def _build_commands_with_error_fixture(self, t_base, t, valid_command_template, invalid_command_template, expected_error_message):
         return (
@@ -169,9 +148,7 @@ class KernelTests(jupyter_kernel_test.KernelTests):
                 t,
                 "Definition t{}_{} := I.",
                 "Definition t{}_{} := I",
-                # missing "." in last command may cause hidden command to appear in error message.
-                # In this case alternative footer explaining error should be shown instead of coqtop error output
-                "Syntax error: '.' expected after" if t != 3 else "Cell evaluation error: last cell command is incomplete or malformed."
+                "Syntax error: '.' expected after"
             )
             for t in (1,2,3)
         ]
@@ -183,7 +160,6 @@ class KernelTests(jupyter_kernel_test.KernelTests):
             self._execute_cell(commited_definition[1])
 
             result = self._execute_cell(code)
-            self.assertIn("cell rolled back", result.lower(), "fixture: {}".format(repr(fixture[f])))
             self.assertIn(expected_error_message, result, "fixture: {}".format(repr(fixture[f])))
 
             # verify roll back
@@ -202,6 +178,8 @@ class KernelTests(jupyter_kernel_test.KernelTests):
 
         self.assertIn("Warning: ", result)
         self.assertNotIn("<warning>", result)
+
+    # TODO add test for different message severities
 
 
 if __name__ == '__main__':
