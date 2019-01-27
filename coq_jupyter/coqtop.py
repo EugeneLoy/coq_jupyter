@@ -84,6 +84,12 @@ class CoqtopWrapper:
                     if self._is_message(r)
                 ]
 
+                if not sentence_evaluated:
+                    # In some cases (for example if there is invalid reference) erroneus command
+                    # can be accepted by parser, increase coqtop tip and fail late.
+                    # To ensure consistent state it is better to roll back to predictable state
+                    self.roll_back_to(self._tip)
+
                 if not sentence_evaluated and len(sentences) > 0:
                     # Attempt to fix error by joining erroneus sentence with next one.
                     # This should fix any errors caused by headless splitting
@@ -126,7 +132,7 @@ class CoqtopWrapper:
             raise_with_traceback(CoqtopError("Cause: {}".format(repr(e))))
 
     def roll_back_to(self, state_id):
-        (reply, _) = self._execute_command(self._build_edit_at_command(state_id))
+        self._execute_command(self._build_edit_at_command(state_id))
         self._tip = state_id
 
     def _execute_command(self, command, allow_fail=False):
