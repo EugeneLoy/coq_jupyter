@@ -1,22 +1,18 @@
 from __future__ import unicode_literals
 
-import re
 import sys
 import traceback
 import time
 
 from traitlets import Unicode
-from subprocess import check_output
 from uuid import uuid4
 from ipykernel.kernelbase import Kernel
-from .coqtop import CoqtopWrapper, CoqtopError
+from .coqtop import Coqtop, CoqtopError
 from .renderer import Renderer, HTML_ROLL_BACK_MESSAGE, TEXT_ROLL_BACK_MESSAGE
 
 
 __version__ = '1.3.0'
 
-
-LANGUAGE_VERSION_PATTERN = re.compile(r'version (\d+(\.\d+)+)')
 
 CELL_COMM_TARGET_NAME = "coq_kernel.cell_comm"
 
@@ -79,17 +75,13 @@ class CoqKernel(Kernel):
             'version': self.language_version
         }
 
-    _banner = None
-
     @property
     def banner(self):
-        if self._banner is None:
-            self._banner = check_output(['coqtop', '--version']).decode('utf-8')
-        return self._banner
+        return self._coqtop.banner
 
     @property
     def language_version(self):
-        return LANGUAGE_VERSION_PATTERN.search(self.banner).group(1)
+        return self._coqtop.version
 
 
     coqtop_args = Unicode().tag(config=True)
@@ -98,7 +90,7 @@ class CoqKernel(Kernel):
     @shutdown_on_coqtop_error
     def __init__(self, **kwargs):
         Kernel.__init__(self, **kwargs)
-        self._coqtop = CoqtopWrapper(self, self.coqtop_args)
+        self._coqtop = Coqtop(self, self.coqtop_args)
         self._journal = CellJournal(self)
         self._renderer = Renderer()
         self._comms = {}

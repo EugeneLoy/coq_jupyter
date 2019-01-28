@@ -2,12 +2,16 @@ from __future__ import unicode_literals
 
 import pexpect
 import re
-
 import xml.etree.ElementTree as ET
+
 from future.utils import raise_with_traceback
+from builtins import zip
+from future.moves.itertools import zip_longest
 from collections import deque
 from pexpect.exceptions import ExceptionPexpect
+from subprocess import check_output
 
+LANGUAGE_VERSION_PATTERN = re.compile(r'version (\d+(\.\d+)+)')
 
 INIT_COMMAND = '<call val="Init"> <option val="none"/> </call>'
 STATUS_COMMAND = '<call val="Status"> <bool val="true"/> </call>'
@@ -35,24 +39,46 @@ REPLY_PATTERNS = [
 
 class CoqtopError(Exception): pass
 
-class CoqtopWrapper:
+class Coqtop:
 
     def __init__(self, kernel, coqtop_args):
         try:
             self.log = kernel.log
+
+            # locate coqtop executable
+            for cmd in ["coqidetop", "coqtop"]:
+                try:
+                    banner = check_output([cmd, '--version']).decode('utf-8')
+                except FileNotFoundError:
+                    cmd = None
+
+            if cmd is None:
+                raise CoqtopError("Failed to locate 'coqidetop' or 'coqtop' executables")
+
+            version = LANGUAGE_VERSION_PATTERN.search(banner).group(1)
+            (parsed_version, version_8_9) = zip(*zip_longest(map(int, version.split(".")), [8, 9], fillvalue=0))
+
+            if cmd == "coqtop" and parsed_version >= version_8_9:
+                raise CoqtopError("Failed to locate 'coqidetop' executable ('coqtop' has been found but is insufficient since v8.9)")
+
+            self.cmd = cmd
+            self.version = version
+            self.banner = banner
+
+            # run coqtop executable
             spawn_args = {
                 "echo": False,
                 "encoding": "utf-8",
                 "codec_errors": "replace"
             }
-
-            try:
+            if self.cmd == "coqidetop":
                 self._coqtop = pexpect.spawn("coqidetop -main-channel stdfds {}".format(coqtop_args), **spawn_args)
-            except ExceptionPexpect:
+            else:
                 self._coqtop = pexpect.spawn("coqtop -toploop coqidetop -main-channel stdfds {}".format(coqtop_args), **spawn_args)
 
+            # perform init
             (reply, _) = self._execute_command(INIT_COMMAND)
-            self._tip = reply.find("state_id").get("val")
+            self._tip = reply.find("./state_id").get("val")
 
         except Exception as e:
             raise_with_traceback(CoqtopError("Cause: {}".format(repr(e))))
