@@ -16,8 +16,8 @@ GOAL_COMMAND = '<call val="Goal"> <unit/> </call>'
 ADD_COMMAND_TEMPLATE = """
 <call val="Add">
   <pair>
-    <pair> <string>{0}</string> <int>0</int> </pair>
-    <pair> <state_id val="{1}" /> <bool val="false" /> </pair>
+    <pair> <string></string> <int>0</int> </pair>
+    <pair> <state_id val="" /> <bool val="false" /> </pair>
   </pair>
 </call>
 """
@@ -111,7 +111,6 @@ class CoqtopWrapper:
                     # Upon reaching this state it we can definitely say that there is
                     # an error in cell code
                     code_evaluated = False
-                    #outputs.extend(out_of_band_status_messsages)
                     outputs.extend(errors)
                     break
 
@@ -141,17 +140,17 @@ class CoqtopWrapper:
         self._tip = state_id
 
     def _execute_command(self, command, allow_fail=False):
-        self.log.error("Executing coqtop command: {}".format(repr(command)))
+        self.log.debug("Executing coqtop command: {}".format(repr(command)))
         self._coqtop.send(command + "\n")
         out_of_band_replies = []
         while True:
             self._coqtop.expect(REPLY_PATTERNS)
 
             if self._coqtop.before.strip(" \t\n\r") != "":
-                self.log.info("Skipping unexpected coqtop output: {}".format(repr(self._coqtop.before)))
+                self.log.warning("Skipping unexpected coqtop output: {}".format(repr(self._coqtop.before)))
 
             reply = self._parse(self._coqtop.match.group(0))
-            self.log.error("Received coqtop reply: {}".format(ET.tostring(reply)))
+            self.log.debug("Received coqtop reply: {}".format(ET.tostring(reply)))
 
             if reply.tag == "value" and not allow_fail and not self._is_good(reply):
                 raise CoqtopError("Unexpected reply: {}".format(ET.tostring(reply)))
@@ -240,7 +239,7 @@ class CoqtopWrapper:
         return reply.find(".status/option/string").text
 
     def _format_richpp(self, richpp):
-        return ET.tostring(richpp, encoding='utf8', method='text').decode('utf8')
+        return ET.tostring(richpp, encoding='utf8', method='text').decode('utf8').strip("\n\r")
 
     def _is_end_of_input_error(self, reply):
         if self._is_good(reply):
@@ -258,5 +257,7 @@ class CoqtopWrapper:
         return EDIT_AT_COMMAND_TEMPLATE.format(state_id)
 
     def _build_add_command(self, sentence, tip):
-        # TODO sanitize xml
-        return ADD_COMMAND_TEMPLATE.format(sentence, tip)
+        command = ET.fromstring(ADD_COMMAND_TEMPLATE)
+        command.find("./pair/pair/string").text = sentence
+        command.find("./pair/pair[2]/state_id").set("val", tip)
+        return ET.tostring(command, encoding='utf8').decode('utf8')

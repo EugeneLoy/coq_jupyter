@@ -186,9 +186,53 @@ class KernelTests(jupyter_kernel_test.KernelTests):
         self.assertNotIn("<error>", result)
 
     def test_coq_jupyter____when_executing_command_that_results_in_notice_message____does_not_print_notice_message_level(self):
-        (expected_result, command) = self._build_sum_command(100, 9)
+        (_, command) = self._build_sum_command(100, 9)
         result = self._execute_cell(command)
+
         self.assertNotIn("notice", result.lower())
+
+    def test_coq_jupyter____executing_code_with_unclosed_comment____prints_error(self):
+        (_, command) = self._build_sum_command(100, 10)
+        result = self._execute_cell(command + " (* ")
+
+        self.assertIn("Unterminated comment", result)
+
+    def test_coq_jupyter____executing_code_surrounded_by_unclosed_comments____prints_evaluation_result(self):
+        (expected_result, command) = self._build_sum_command(100, 11)
+        result = self._execute_cell("(* comment *)" + command + "(* comment *)")
+
+        self.assertIn(expected_result, result)
+        self.assertNotIn("error", result.lower())
+
+    def test_coq_jupyter____executing_code_with_comments_woven_in____prints_evaluation_result(self):
+        result = self._execute_cell("Check (* some comment with '.' in the middle *) I.")
+
+        self.assertIn("True", result)
+        self.assertNotIn("error", result.lower())
+
+    def test_coq_jupyter____executing_code_comments_only____does_not_result_in_error(self):
+        result = self._execute_cell("(* comment *)")
+
+        self.assertNotIn("error", result.lower())
+
+    def test_coq_jupyter____executing_code_with_non_xml_symbols____prints_evaluation_result(self):
+        code = """
+        Compute
+        match 0 with
+          | 0 => 1 + 1
+          | S n' => n'
+        end.
+        """
+        result = self._execute_cell(code)
+
+        self.assertIn("2", result)
+        self.assertNotIn("error", result.lower())
+
+    def test_coq_jupyter____executing_long_running_code_____prints_evaluation_result(self):
+        code = "Goal True. timeout 10 (repeat eapply proj1)."
+        result = self._execute_cell(code)
+
+        self.assertIn("Tactic timeout", result)
 
 
 if __name__ == '__main__':
