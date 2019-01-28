@@ -174,12 +174,21 @@ class KernelTests(jupyter_kernel_test.KernelTests):
         # https://github.com/EugeneLoy/coq_jupyter/issues/21
         # https://github.com/EugeneLoy/coq_jupyter/issues/23
 
-        result = self._execute_cell("Compute 50000 + 50000.")
+        result = self._execute_cell("Compute 5001.")
 
         self.assertIn("Warning: ", result)
         self.assertNotIn("<warning>", result)
 
-    # TODO add test for different message severities
+    def test_coq_jupyter____when_executing_command_that_results_in_error____prints_error_once(self):
+        result = self._execute_cell("Compute INVALID_REFERENCE.")
+
+        self.assertEqual(result.count("Error: The reference INVALID_REFERENCE was not found"), 1, "result: " + repr(result))
+        self.assertNotIn("<error>", result)
+
+    def test_coq_jupyter____when_executing_command_that_results_in_notice_message____does_not_print_notice_message_level(self):
+        (expected_result, command) = self._build_sum_command(100, 9)
+        result = self._execute_cell(command)
+        self.assertNotIn("notice", result.lower())
 
 
 if __name__ == '__main__':

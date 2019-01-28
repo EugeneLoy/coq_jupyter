@@ -111,7 +111,7 @@ class CoqtopWrapper:
                     # Upon reaching this state it we can definitely say that there is
                     # an error in cell code
                     code_evaluated = False
-                    outputs.extend(out_of_band_status_messsages)
+                    #outputs.extend(out_of_band_status_messsages)
                     outputs.extend(errors)
                     break
 
@@ -180,7 +180,12 @@ class CoqtopWrapper:
 
     def _get_error_content(self, reply):
         # TODO add error context using loc_s, loc_e
-        return self._format_richpp(self._unwrap_error(reply).find("./richpp"))
+        error_content = self._format_richpp(self._unwrap_error(reply).find("./richpp"))
+        error_prefix = "Error: "
+        if error_content.startswith(error_prefix):
+            return error_content
+        else:
+            return error_prefix + error_content
 
     def _unwrap_message(self, reply):
         return reply if reply.tag == "message" else reply.find(".//message")
@@ -190,16 +195,14 @@ class CoqtopWrapper:
 
     def _get_message_content(self, reply):
         message = self._unwrap_message(reply)
-        level = message.find("./message_level").get("val")
+        message_content = self._format_richpp(message.find("./richpp"))
+        message_level = message.find("./message_level").get("val")
+        message_level_prefix = "{}: ".format(message_level.capitalize())
 
-        if level != "notice":
-            content = "{}: ".format(level.capitalize())
+        if message_level == "notice" or message_content.startswith(message_level_prefix):
+            return message_content
         else:
-            content = ""
-
-        content += self._format_richpp(message.find("./richpp"))
-
-        return content
+            return message_level_prefix + message_content
 
     def _unwrap_goals(self, reply):
         return reply.find("./option/goals")
