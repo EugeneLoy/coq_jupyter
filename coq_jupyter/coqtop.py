@@ -49,6 +49,7 @@ class Coqtop:
             for cmd in ["coqidetop", "coqtop"]:
                 try:
                     banner = check_output([cmd, '--version']).decode('utf-8')
+                    break
                 except:
                     cmd = None
 
