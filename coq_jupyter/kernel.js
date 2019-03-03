@@ -18,7 +18,7 @@
       console.info('Coq kernel script: adding CodeMirror mode.');
 
       // Coq mode based on source taken from: https://github.com/ejgallego/CodeMirror/blob/9a1be1c5f716301245c27d4c541358835c1694fe/mode/coq/coq.js
-      // Vernacular and tactics updated for 8.8.2
+      // Vernacular and tactics updated for 8.9.0
       // Also see: https://github.com/EugeneLoy/coq_jupyter/issues/19
 
       CodeMirror.defineMode('coq', function(_config, _parserConfig) {
@@ -103,6 +103,7 @@
           "Next",
           "NonCumulative",
           "Notation",
+          "Numeral",
           "Obligation",
           "Obligations",
           "Opaque",
@@ -142,6 +143,7 @@
           "Solve",
           "Strategy",
           "Structure",
+          "SubClass",
           "Tactic",
           "Test",
           "Theorem",
@@ -208,6 +210,7 @@
           "congr",
           "congruence",
           "constr_eq",
+          "constr_eq_strict",
           "constructor",
           "contradict",
           "contradiction",
@@ -267,7 +270,6 @@
           "firstorder",
           "fix",
           "fold",
-          "fourier",
           "function",
           "functional",
           "generalize",
@@ -288,6 +290,7 @@
           "intros",
           "intuition",
           "inversion",
+          "inversion_sigma",
           "is_evar",
           "is_var",
           "lapply",
@@ -297,7 +300,6 @@
           "let",
           "lia",
           "lra",
-          "ltac-seq",
           "match",
           "move",
           "native_compute",

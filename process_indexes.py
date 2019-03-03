@@ -2,7 +2,7 @@
 # TODO find a better way to do this
 # This script parses coq tactics\commands index pages and outputs relevant
 # keywords to be used in CodeMirror coq mode
-# X_data variables are taken from Coq 8.8.2 documentation
+# X_data variables are taken from Coq 8.9.0 documentation
 
 commands_data = """
 	a
@@ -55,6 +55,7 @@ commands_data = """
 	Cumulative
 
 	d
+	Declare Custom Entry
 	Declare Implicit Tactic
 	Declare Instance
 	Declare Left Step
@@ -84,9 +85,7 @@ commands_data = """
 	Extraction Blacklist
 	Extraction Implicit
 	Extraction Inline
-	Extraction Language Haskell
-	Extraction Language OCaml
-	Extraction Language Scheme
+	Extraction Language
 	Extraction Library
 	Extraction NoInline
 	Extraction TestCompile
@@ -115,13 +114,18 @@ commands_data = """
 
 	h
 	Hint
-	Hint ( Transparent | Opaque )
+	Hint Constants
 	Hint Constructors
+	Hint Cut
 	Hint Extern
 	Hint Immediate
+	Hint Mode
+	Hint Opaque
 	Hint Resolve
 	Hint Rewrite
+	Hint Transparent
 	Hint Unfold
+	Hint Variables
 	Hint View for
 	Hint View for apply
 	Hint View for move
@@ -148,6 +152,7 @@ commands_data = """
 	Load
 	Local
 	Local Close Scope
+	Local Declare Custom Entry
 	Local Definition
 	Local Notation
 	Local Open Scope
@@ -166,6 +171,7 @@ commands_data = """
 	Next Obligation
 	NonCumulative
 	Notation
+	Numeral Notation
 
 	o
 	Obligation num
@@ -193,6 +199,7 @@ commands_data = """
 	Print Extraction Blacklist
 	Print Extraction Inline
 	Print Firstorder Solver
+	Print Grammar
 	Print Grammar constr
 	Print Grammar pattern
 	Print Grammar tactic
@@ -282,6 +289,7 @@ commands_data = """
 	Solve Obligations
 	Strategy
 	Structure
+	SubClass
 
 	t
 	Tactic Notation
@@ -368,6 +376,7 @@ tactics_data = """
 	congruence
 	congruence with
 	constr_eq
+	constr_eq_strict
 	constructor
 	contradict
 	contradiction
@@ -420,6 +429,7 @@ tactics_data = """
 	elimtype
 	enough
 	epose
+	epose proof
 	eremember
 	erewrite
 	eright
@@ -445,7 +455,6 @@ tactics_data = """
 	firstorder
 	fix
 	fold
-	fourier
 	function induction
 	functional inversion
 
@@ -474,6 +483,7 @@ tactics_data = """
 	intros ...
 	intuition
 	inversion
+	inversion_sigma
 	is_evar
 	is_var
 
