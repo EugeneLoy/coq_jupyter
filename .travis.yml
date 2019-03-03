@@ -21,7 +21,7 @@ install:
   - sudo apt-get install -y python3-pip
   - if [ $PYTHON_VERSION = 2 ]; then sudo apt-get install -y python-pip; fi
   - pip3 install --user setuptools wheel
-  - pip3 install --user --upgrade 'jupyter_kernel_test>=0.3'
+  - pip3 install --user --upgrade 'jupyter_kernel_test>=0.3' 'tornado==5.1.1'
 
 script:
   - python3 setup.py sdist bdist_wheel
