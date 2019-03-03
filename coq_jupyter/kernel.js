@@ -11,6 +11,10 @@
   return {
     onload: function() {
 
+      var version = '1.3.0';
+
+      console.info('Loading Coq kernel script, version: ' + version);
+
       console.info('Coq kernel script: adding CodeMirror mode.');
 
       // Coq mode based on source taken from: https://github.com/ejgallego/CodeMirror/blob/9a1be1c5f716301245c27d4c541358835c1694fe/mode/coq/coq.js
