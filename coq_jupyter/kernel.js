@@ -9,12 +9,22 @@
   "use strict";
 
   return {
+
+    version: '1.4.0',
+
     onload: function() {
+      console.info('Loading Coq kernel script, version: ' + this.version);
 
-      var version = '1.4.0';
+      this.init_CodeMirror();
+      this.patch_execute();
+      this.init_shortcuts();
 
-      console.info('Loading Coq kernel script, version: ' + version);
+      window.CoqKernel = this;
 
+      console.info('Coq kernel script loaded.');
+    },
+
+    init_CodeMirror: function() {
       console.info('Coq kernel script: adding CodeMirror mode.');
 
       // Coq mode based on source taken from: https://github.com/ejgallego/CodeMirror/blob/9a1be1c5f716301245c27d4c541358835c1694fe/mode/coq/coq.js
@@ -587,7 +597,15 @@
       CodeMirror.defineMIME('text/x-coq', {
         name: 'coq'
       });
+    },
 
+    patch_execute: function() {
+      console.info('Coq kernel script: patching CodeCell.execute.');
+
+      // TODO
+    },
+
+    init_shortcuts: function() {
       console.info('Coq kernel script: adding actions/shortcuts.');
 
       var action = {
@@ -606,9 +624,8 @@
       var full_action_name = jupyter.actions.register(action, action_name, prefix);
       jupyter.toolbar.add_buttons_group([full_action_name]);
       jupyter.keyboard_manager.command_shortcuts.add_shortcut('Ctrl-Backspace', full_action_name);
-
-      console.info('Coq kernel script loaded.');
     }
+
   };
 
 });
