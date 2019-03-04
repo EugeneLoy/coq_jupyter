@@ -6,18 +6,18 @@ You can try it online in [Binder](https://mybinder.org/v2/gh/EugeneLoy/coq_jupyt
 
 ## Installation
 
-Make sure that Coq (8.6+) is installed and `coqtop` is in your `PATH`.
+Make sure that CoqIDE (8.6 or newer) is installed and `coqidetop` (or `coqtop` for coq versions before 8.9.0) is in your `PATH`.
 
 After that install using `pip` (works with python 2/3):
 
     pip install coq-jupyter
     python -m coq_jupyter.install
 
-## Customizing coqtop arguments
+## Customizing coqidetop arguments
 
-Use `--coqtop-args` to supply additional arguments to `coqtop` when installing kernel. In this case you might also want to set custom kernel name/display name using `--kernel-name`/`--kernel-display-name`.
+Use `--coqtop-args` to supply additional arguments to `coqidetop`/`coqtop` when installing kernel. In this case you might also want to set custom kernel name/display name using `--kernel-name`/`--kernel-display-name`.
 
-For example, to add kernel that instructs `coqtop` to load `/workspace/init.v` on startup:
+For example, to add kernel that instructs `coqidetop` to load `/workspace/init.v` on startup:
 
     python -m coq_jupyter.install --kernel-name=coq_with_init --kernel-display-name="Coq (with init.v)" --coqtop-args="-l /workspace/init.v"
 
