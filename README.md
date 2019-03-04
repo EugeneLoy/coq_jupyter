@@ -13,6 +13,10 @@ After that install using `pip` (works with python 2/3):
     pip install coq-jupyter
     python -m coq_jupyter.install
 
+## Backtracking
+
+To rollback evaluated cell you can use rollback button (at the bottom of evaluated cell) or shortcut (`Ctrl+Backspace`).
+
 ## Customizing coqidetop arguments
 
 Use `--coqtop-args` to supply additional arguments to `coqidetop`/`coqtop` when installing kernel. In this case you might also want to set custom kernel name/display name using `--kernel-name`/`--kernel-display-name`.
