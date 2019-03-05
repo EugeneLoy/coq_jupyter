@@ -602,7 +602,36 @@
     patch_execute: function() {
       console.info('Coq kernel script: patching CodeCell.execute.');
 
-      // TODO
+      // based on: https://gist.github.com/quinot/e3801b09f754efb0f39ccfbf0b50eb40
+
+      var codecell = require('notebook/js/codecell');
+
+      var original_execute = codecell.CodeCell.prototype.execute;
+      codecell.CodeCell.prototype.execute = function(stop_on_error) {
+          var cell = this;
+
+          if (!this.coq_kernel_kernel_patched) {
+            this.coq_kernel_kernel_patched = true;
+
+            this.coq_kernel_original_kernel = this.kernel;
+            this.kernel = new Proxy(
+              this.coq_kernel_original_kernel,
+              {
+                "get": function(target, prop, receiver) {
+                  if (prop == "execute") {
+                    return function(code, callbacks, metadata) {
+                        return CoqKernel.execute_cell(cell, code, callbacks, metadata);
+                    };
+                  } else {
+                    return target[prop];
+                  }
+                }
+              }
+            );
+          }
+
+          original_execute.call(this, stop_on_error)
+      };
     },
 
     init_shortcuts: function() {
@@ -624,6 +653,16 @@
       var full_action_name = jupyter.actions.register(action, action_name, prefix);
       jupyter.toolbar.add_buttons_group([full_action_name]);
       jupyter.keyboard_manager.command_shortcuts.add_shortcut('Ctrl-Backspace', full_action_name);
+    },
+
+    execute_cell: function(cell, code, callbacks, metadata) {
+      metadata.execution_id = Math.random().toString(36).substr(2, 9);;
+      if (cell.metadata.execution_id !== undefined) {
+        metadata.previous_execution_id = cell.metadata.execution_id;
+      }
+      cell.metadata.execution_id = metadata.execution_id;
+
+      return cell.coq_kernel_original_kernel.execute(code, callbacks, metadata);
     }
 
   };
