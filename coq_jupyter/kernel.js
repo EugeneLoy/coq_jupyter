@@ -15,11 +15,20 @@
     onload: function() {
       console.info('Loading Coq kernel script, version: ' + this.version);
 
-      this.init_CodeMirror();
-      this.patch_execute();
-      this.init_shortcuts();
+      var self = this;
+      var jupyter = require('base/js/namespace');
 
+      // TODO find better way to expose coq kernel
       window.CoqKernel = this;
+
+      this.init_CodeMirror();
+      this.patch();
+      this.init_shortcuts();
+      this.init_kernel_comm();
+
+      jupyter.notebook.kernel.events.on('kernel_ready.Kernel', function (evt, info) {
+        self.init_kernel_comm();
+      });
 
       console.info('Coq kernel script loaded.');
     },
@@ -599,11 +608,12 @@
       });
     },
 
-    patch_execute: function() {
+    patch: function() {
       console.info('Coq kernel script: patching CodeCell.execute.');
 
       // based on: https://gist.github.com/quinot/e3801b09f754efb0f39ccfbf0b50eb40
 
+      var self = this;
       var codecell = require('notebook/js/codecell');
 
       var original_execute = codecell.CodeCell.prototype.execute;
@@ -620,7 +630,7 @@
                 "get": function(target, prop, receiver) {
                   if (prop == "execute") {
                     return function(code, callbacks, metadata) {
-                        return CoqKernel.execute_cell(cell, code, callbacks, metadata);
+                        return self.execute_cell(cell, code, callbacks, metadata);
                     };
                   } else {
                     return target[prop];
@@ -632,10 +642,27 @@
 
           original_execute.call(this, stop_on_error)
       };
+
+      console.info('Coq kernel script: patching OutputArea.append_execute_result.');
+
+      var outputarea = require('notebook/js/outputarea');
+      var original_append_execute_result = outputarea.OutputArea.prototype.append_execute_result;
+      outputarea.OutputArea.prototype.append_execute_result = function(json) {
+        var result = original_append_execute_result.call(this, json);
+        // Enable rollback button. This is done here since rollback button relies
+        // on successfull operation of kernel.js script. In case frontend does not
+        // support kernel.js the button will remain hidden to end user providing
+        // ad-hoc fallback.
+        $(this.element[0]).find(".coq_kernel_roll_back_button_area").toggle(true);
+        return result;
+      };
     },
 
     init_shortcuts: function() {
       console.info('Coq kernel script: adding actions/shortcuts.');
+
+      var self = this;
+      var jupyter = require('base/js/namespace');
 
       var action = {
         icon: 'fa-step-backward',
@@ -643,26 +670,97 @@
         help: 'Rollback cell',
         help_index: 'zz', // TODO not sure what to set here
         handler: function () {
-          $(".cell.selected .enabled_roll_back_button, .cell.jupyter-soft-selected .enabled_roll_back_button").triggerHandler("click");
+          var jupyter = require('base/js/namespace');
+          var cells = jupyter.notebook.get_cells();
+          for (var i = 0; i < cells.length; i++) {
+            if (cells[i].selected || cells[i].element.hasClass('jupyter-soft-selected')) {
+              self.roll_back_cell(cells[i]);
+            }
+          }
         }
       };
       var prefix = 'coq_jupyter';
       var action_name = 'rollback-cell';
 
-      var jupyter = require('base/js/namespace');
       var full_action_name = jupyter.actions.register(action, action_name, prefix);
       jupyter.toolbar.add_buttons_group([full_action_name]);
       jupyter.keyboard_manager.command_shortcuts.add_shortcut('Ctrl-Backspace', full_action_name);
     },
 
-    execute_cell: function(cell, code, callbacks, metadata) {
-      metadata.execution_id = Math.random().toString(36).substr(2, 9);;
-      if (cell.metadata.execution_id !== undefined) {
-        metadata.previous_execution_id = cell.metadata.execution_id;
-      }
-      cell.metadata.execution_id = metadata.execution_id;
+    init_kernel_comm: function() {
+      console.info('Coq kernel script: opening kernel comm.');
 
-      return cell.coq_kernel_original_kernel.execute(code, callbacks, metadata);
+      var self = this;
+      var jupyter = require('base/js/namespace');
+
+      this.kernel_comm = jupyter.notebook.kernel.comm_manager.new_comm('coq_kernel.kernel_comm', {});
+      this.kernel_comm.on_msg(function(message) {
+        self.handle_kernel_comm_message(message);
+      });
+
+      // TODO handle kernel restart
+    },
+
+    handle_kernel_comm_message: function(message) {
+      if (message.content.data.comm_msg_type === "kernel_comm_opened") {
+        console.info('Kernel comm opened. comm_id: ' + message.content.comm_id);
+        var history = message.content.data.history
+        for (var i = 0; i < history.length; i++) {
+          this.update_cell_output(
+            history[i].execution_id,
+            history[i].evaluated,
+            history[i].rolled_back
+          );
+        }
+      } else if (message.content.data.comm_msg_type === "cell_state") {
+        console.info('Cell state updated. execution_id: ' + message.content.data.execution_id);
+        this.update_cell_output(
+          message.content.data.execution_id,
+          message.content.data.evaluated,
+          message.content.data.rolled_back
+        );
+      } else {
+        console.error('Unexpected comm message: ' + JSON.stringify(message));
+      }
+    },
+
+    execute_cell: function(cell, code, callbacks, metadata) {
+      // reuse "execute_request" message id as "execution_id" used by coq kernel
+      // to track cell executions
+      cell.metadata.execution_id = cell.coq_kernel_original_kernel.execute(code, callbacks, metadata);
+
+      return cell.metadata.execution_id;
+    },
+
+    roll_back_cell: function(cell) {
+      if (cell.metadata.execution_id != undefined) {
+        $(cell.element[0]).find(".coq_kernel_roll_back_button").prop('disabled', true);
+
+        this.kernel_comm.send({
+          'comm_msg_type': 'roll_back',
+          "execution_id": cell.metadata.execution_id
+        });
+      }
+    },
+
+    roll_back: function(button) {
+      this.roll_back_cell(this.get_cell_by_element(button));
+    },
+
+    get_cell_by_element: function(element) {
+      var jupyter = require('base/js/namespace');
+      var cells = jupyter.notebook.get_cells();
+      for (var i = 0; i < cells.length; i++) {
+        if ($.contains(cells[i].element[0], element)) {
+          return cells[i];
+        }
+      }
+    },
+
+    update_cell_output: function(execution_id, evaluated, rolled_back) {
+      $(".coq_kernel_output_area_" + execution_id).toggle(!rolled_back);
+      $(".coq_kernel_roll_back_message_" + execution_id).toggle(rolled_back);
+      $(".coq_kernel_roll_back_button_area_" + execution_id).toggle(evaluated && !rolled_back);
     }
 
   };

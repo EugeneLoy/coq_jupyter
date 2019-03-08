@@ -1,2 +1,1 @@
 include coq_jupyter/kernel.js
-include coq_jupyter/cell_comm.js
