@@ -1,22 +1,22 @@
-(function(mod) {
-  if (typeof exports == "object" && typeof module == "object") // CommonJS
-    mod(require("codemirror/lib/codemirror"));
-  else if (typeof define == "function" && define.amd) // AMD
-    define(["codemirror/lib/codemirror"], mod);
-  else // Plain browser env
-    mod(CodeMirror);
-})(function(CodeMirror) {
+define([
+  'base/js/namespace',
+  'notebook/js/codecell',
+  'notebook/js/outputarea',
+  'codemirror/lib/codemirror'
+], function (
+  Jupyter,
+  CodeCell,
+  OutputArea,
+  CodeMirror
+) {
   "use strict";
 
-  return {
+  var self = {
 
     version: '1.4.0',
 
     onload: function() {
       console.info('Loading Coq kernel script, version: ' + this.version);
-
-      var self = this;
-      var jupyter = require('base/js/namespace');
 
       // TODO find better way to expose coq kernel
       window.CoqKernel = this;
@@ -26,7 +26,7 @@
       this.init_shortcuts();
       this.init_kernel_comm();
 
-      jupyter.notebook.kernel.events.on('kernel_ready.Kernel', function (evt, info) {
+      Jupyter.notebook.kernel.events.on('kernel_ready.Kernel', function (evt, info) {
         self.init_kernel_comm();
       });
 
@@ -613,11 +613,8 @@
 
       // based on: https://gist.github.com/quinot/e3801b09f754efb0f39ccfbf0b50eb40
 
-      var self = this;
-      var codecell = require('notebook/js/codecell');
-
-      var original_execute = codecell.CodeCell.prototype.execute;
-      codecell.CodeCell.prototype.execute = function(stop_on_error) {
+      var original_execute = CodeCell.CodeCell.prototype.execute;
+      CodeCell.CodeCell.prototype.execute = function(stop_on_error) {
           var cell = this;
 
           if (!this.coq_kernel_kernel_patched) {
@@ -645,9 +642,8 @@
 
       console.info('Coq kernel script: patching OutputArea.append_execute_result.');
 
-      var outputarea = require('notebook/js/outputarea');
-      var original_append_execute_result = outputarea.OutputArea.prototype.append_execute_result;
-      outputarea.OutputArea.prototype.append_execute_result = function(json) {
+      var original_append_execute_result = OutputArea.OutputArea.prototype.append_execute_result;
+      OutputArea.OutputArea.prototype.append_execute_result = function(json) {
         var result = original_append_execute_result.call(this, json);
         // Enable rollback button. This is done here since rollback button relies
         // on successfull operation of kernel.js script. In case frontend does not
@@ -661,17 +657,13 @@
     init_shortcuts: function() {
       console.info('Coq kernel script: adding actions/shortcuts.');
 
-      var self = this;
-      var jupyter = require('base/js/namespace');
-
       var action = {
         icon: 'fa-step-backward',
         cmd: 'Rollback cell',
         help: 'Rollback cell',
         help_index: 'zz', // TODO not sure what to set here
         handler: function () {
-          var jupyter = require('base/js/namespace');
-          var cells = jupyter.notebook.get_cells();
+          var cells = Jupyter.notebook.get_cells();
           for (var i = 0; i < cells.length; i++) {
             if (cells[i].selected || cells[i].element.hasClass('jupyter-soft-selected')) {
               self.roll_back_cell(cells[i]);
@@ -682,23 +674,18 @@
       var prefix = 'coq_jupyter';
       var action_name = 'rollback-cell';
 
-      var full_action_name = jupyter.actions.register(action, action_name, prefix);
-      jupyter.toolbar.add_buttons_group([full_action_name]);
-      jupyter.keyboard_manager.command_shortcuts.add_shortcut('Ctrl-Backspace', full_action_name);
+      var full_action_name = Jupyter.actions.register(action, action_name, prefix);
+      Jupyter.toolbar.add_buttons_group([full_action_name]);
+      Jupyter.keyboard_manager.command_shortcuts.add_shortcut('Ctrl-Backspace', full_action_name);
     },
 
     init_kernel_comm: function() {
       console.info('Coq kernel script: opening kernel comm.');
 
-      var self = this;
-      var jupyter = require('base/js/namespace');
-
-      this.kernel_comm = jupyter.notebook.kernel.comm_manager.new_comm('coq_kernel.kernel_comm', {});
+      this.kernel_comm = Jupyter.notebook.kernel.comm_manager.new_comm('coq_kernel.kernel_comm', {});
       this.kernel_comm.on_msg(function(message) {
         self.handle_kernel_comm_message(message);
       });
-
-      // TODO handle kernel restart
     },
 
     handle_kernel_comm_message: function(message) {
@@ -748,8 +735,7 @@
     },
 
     get_cell_by_element: function(element) {
-      var jupyter = require('base/js/namespace');
-      var cells = jupyter.notebook.get_cells();
+      var cells = Jupyter.notebook.get_cells();
       for (var i = 0; i < cells.length; i++) {
         if ($.contains(cells[i].element[0], element)) {
           return cells[i];
@@ -764,5 +750,7 @@
     }
 
   };
+
+  return self;
 
 });
