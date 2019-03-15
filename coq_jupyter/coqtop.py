@@ -79,14 +79,14 @@ class Coqtop:
 
             # perform init
             (reply, _) = self._execute_command(INIT_COMMAND)
-            self._tip = reply.find("./state_id").get("val")
+            self.tip = reply.find("./state_id").get("val")
 
         except Exception as e:
             raise_with_traceback(CoqtopError("Cause: {}".format(repr(e))))
 
     def eval(self, code):
         try:
-            tip_before = self._tip
+            tip_before = self.tip
 
             # split code into sentences (headlesssly)
             sentences = code.split(".")
@@ -101,7 +101,7 @@ class Coqtop:
             while len(sentences) > 0:
                 sentence = sentences.popleft()
 
-                (add_reply, _) = self._execute_command(self._build_add_command(sentence, self._tip), allow_fail=True)
+                (add_reply, _) = self._execute_command(self._build_add_command(sentence, self.tip), allow_fail=True)
                 (status_reply, out_of_band_status_replies) = self._execute_command(STATUS_COMMAND, allow_fail=True)
 
                 sentence_evaluated = self._is_good(add_reply) and self._is_good(status_reply)
@@ -120,7 +120,7 @@ class Coqtop:
                     # In some cases (for example if there is invalid reference) erroneus command
                     # can be accepted by parser, increase coqtop tip and fail late.
                     # To ensure consistent state it is better to roll back to predictable state
-                    self.roll_back_to(self._tip)
+                    self.roll_back_to(self.tip)
 
                 if not sentence_evaluated and len(sentences) > 0:
                     # Attempt to fix error by joining erroneus sentence with next one.
@@ -141,7 +141,7 @@ class Coqtop:
                     outputs.extend(errors)
                     break
 
-                self._tip = self._get_next_tip(add_reply)
+                self.tip = self._get_nexttip(add_reply)
                 outputs.extend(out_of_band_status_messsages)
 
             if code_evaluated:
@@ -157,14 +157,14 @@ class Coqtop:
                 # roll back any side effects of code
                 self.roll_back_to(tip_before)
 
-            return (tip_before, code_evaluated, outputs)
+            return (code_evaluated, outputs)
 
         except Exception as e:
             raise_with_traceback(CoqtopError("Cause: {}".format(repr(e))))
 
     def roll_back_to(self, state_id):
         self._execute_command(self._build_edit_at_command(state_id))
-        self._tip = state_id
+        self.tip = state_id
 
     def _execute_command(self, command, allow_fail=False):
         self.log.debug("Executing coqtop command: {}".format(repr(command)))
@@ -189,7 +189,7 @@ class Coqtop:
     def _parse(self, reply):
         return ET.fromstring(reply.replace("&nbsp;", " "))
 
-    def _get_next_tip(self, reply):
+    def _get_nexttip(self, reply):
         state_id = reply.find("[@val='good']/pair/pair/union/state_id")
         if state_id is None:
             state_id = reply.find("[@val='good']/pair/state_id")

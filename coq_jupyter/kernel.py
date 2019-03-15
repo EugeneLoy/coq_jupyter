@@ -19,12 +19,16 @@ CELL_COMM_TARGET_NAME = "coq_kernel.kernel_comm"
 
 class CellRecord:
 
-    def __init__(self, state_label_before, evaluated, rolled_back, execution_id, parent_header):
+    def __init__(self, state_label_before, state_label_after, evaluated, rolled_back, execution_id, parent_header):
+        self.state_label_after = state_label_after
         self.state_label_before = state_label_before
         self.evaluated = evaluated
         self.rolled_back = rolled_back
         self.execution_id = execution_id
         self.parent_header = parent_header
+
+    def __repr__(self):
+        return "<CellRecord: {}>".format(repr((self.state_label_before, self.state_label_after, self.evaluated, self.rolled_back, self.execution_id, self.parent_header)))
 
 
 class CellJournal:
@@ -33,8 +37,8 @@ class CellJournal:
         self.log = kernel.log # TODO
         self.history = []
 
-    def add(self, state_label_before, evaluated, rolled_back, execution_id, parent_header):
-        record = CellRecord(state_label_before, evaluated, rolled_back, execution_id, parent_header)
+    def add(self, state_label_before, state_label_after, evaluated, rolled_back, execution_id, parent_header):
+        record = CellRecord(state_label_before, state_label_after, evaluated, rolled_back, execution_id, parent_header)
         self.history.append(record)
         return record
 
@@ -103,19 +107,22 @@ class CoqKernel(Kernel):
         try:
             self.log.info("Processing 'execute_request', code: \n{}\n".format(repr(code)))
             if code.strip("\n\r\t ") != "":
-                result = shutdown_on_coqtop_error(lambda self: self._coqtop.eval(code))(self)
-
-                (state_label_before, evaluated, outputs) = result
+                state_label_before = self._coqtop.tip
+                (evaluated, outputs) = shutdown_on_coqtop_error(lambda self: self._coqtop.eval(code))(self)
+                state_label_after = self._coqtop.tip
                 execution_id = self._parent_header["msg_id"]
-                record = self._journal.add(state_label_before, evaluated, False, execution_id, self._parent_header)
+
+                record = self._journal.add(state_label_before, state_label_after, evaluated, False, execution_id, self._parent_header)
 
                 if not silent:
-                    self.log.info("Sending 'execute_result', evaluation result: \n{}\n".format(repr(result)))
-                    self._send_execute_result(outputs, execution_id, evaluated)
+                    self.log.info("Sending 'execute_result', cell record:\n{}\n".format(repr(record)))
+                    self._send_execute_result(outputs, execution_id, evaluated, state_label_after)
+
+                return self._build_ok_content(state_label_before)
             else:
                 self.log.info("code is empty - skipping evaluation and sending results.")
+                return self._build_ok_content(self._coqtop.tip)
 
-            return self._build_ok_content()
         except Exception as e:
             self.log.exception("Error during evaluating code: \n'{}'\n".format(repr(code)))
             return self._build_error_content(*sys.exc_info())
@@ -168,10 +175,10 @@ class CoqKernel(Kernel):
         else:
             self.log.info("Unexpected (possibly leftover) roll back request for execution_id: {}".format(execution_id))
 
-    def _build_ok_content(self):
+    def _build_ok_content(self, state_label_before):
         return {
             'status': 'ok',
-            'execution_count': self.execution_count,
+            'execution_count': int(state_label_before),
             'payload': [],
             'user_expressions': {},
         }
@@ -224,9 +231,9 @@ class CoqKernel(Kernel):
         content = self._build_display_data_content(TEXT_ROLL_BACK_MESSAGE, HTML_ROLL_BACK_MESSAGE, execution_id)
         self.session.send(self.iopub_socket, "update_display_data", content, parent_header, None, None, None, None, None)
 
-    def _send_execute_result(self, outputs, execution_id, evaluated):
+    def _send_execute_result(self, outputs, execution_id, evaluated, state_label_after):
         text = self._renderer.render_text_result(outputs)
         html = self._renderer.render_html_result(outputs, execution_id, evaluated)
         content = self._build_display_data_content(text, html, execution_id)
-        content['execution_count'] = self.execution_count
+        content['execution_count'] = int(state_label_after)
         self.send_response(self.iopub_socket, 'execute_result', content)
