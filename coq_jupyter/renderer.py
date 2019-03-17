@@ -3,8 +3,8 @@ from __future__ import unicode_literals
 import os
 
 HTML_OUTPUT_TEMPLATE = """
-<div class="coq_kernel_output_area_{0}">
-    <pre>{1}</pre>
+<div class="coq_kernel_output_area">
+    <pre>{0}</pre>
     <br>
     <i class="fa-check fa text-success"></i>
     <span>Cell evaluated.</span>
@@ -12,16 +12,16 @@ HTML_OUTPUT_TEMPLATE = """
 """
 
 HTML_ERROR_OUTPUT_TEMPLATE = """
-<div class="coq_kernel_output_area_{0}">
-    <pre>{1}</pre>
+<div class="coq_kernel_output_area">
+    <pre>{0}</pre>
     <br>
     <i class="fa-times fa text-danger"></i>
     <span>Error while evaluating cell. Cell rolled back.</span>
 </div>
 """
 
-HTML_ROLL_BACK_MESSAGE_TEMPLATE = """
-<div class="coq_kernel_roll_back_message_{0}" style="display: none">
+HTML_ROLL_BACK_MESSAGE_HIDDEN = """
+<div class="coq_kernel_roll_back_message" style="display: none">
     <i class="fa-exclamation-circle fa text-info"></i>
     <span>Cell rolled back.</span>
 </div>
@@ -36,13 +36,17 @@ HTML_ROLL_BACK_MESSAGE = """
 
 TEXT_ROLL_BACK_MESSAGE = "Cell rolled back."
 
-HTML_ROLL_BACK_CONTROLS_TEMPLATE = """
-<div class="coq_kernel_roll_back_controls_area_{0} coq_kernel_roll_back_controls_area" style="display: none; position: relative;">
+HTML_ROLL_BACK_CONTROLS = """
+<div class="coq_kernel_roll_back_controls_area" style="display: none; position: relative;">
     <button class="btn btn-default btn-xs coq_kernel_roll_back_button" style="margin-top: 5px;" onclick="CoqKernel.roll_back(this)">
         <i class="fa-step-backward fa"></i>
         <span class="toolbar-btn-label">Rollback cell</span>
     </button>
 
+    <div style="display: inline-block; vertical-align: middle; margin-top: 5px; padding-left: 0; padding-right: 0;">
+      <input class="coq_kernel_auto_roll_back_checkbox" type="checkbox" value="" onchange="CoqKernel.toggle_auto_roll_back(this)" checked>
+      <label">Auto rollback</label>
+    </div>
 </div>
 """
 
@@ -55,10 +59,10 @@ class Renderer:
 
     def render_html_result(self, outputs, execution_id, success_output):
         if success_output:
-            html = HTML_OUTPUT_TEMPLATE.format(execution_id, self.render_text_result(outputs))
-            html += HTML_ROLL_BACK_MESSAGE_TEMPLATE.format(execution_id)
-            html += HTML_ROLL_BACK_CONTROLS_TEMPLATE.format(execution_id)
+            html = HTML_OUTPUT_TEMPLATE.format(self.render_text_result(outputs))
+            html += HTML_ROLL_BACK_MESSAGE_HIDDEN
+            html += HTML_ROLL_BACK_CONTROLS
         else:
-            html = HTML_ERROR_OUTPUT_TEMPLATE.format(execution_id, self.render_text_result(outputs))
+            html = HTML_ERROR_OUTPUT_TEMPLATE.format(self.render_text_result(outputs))
 
         return html

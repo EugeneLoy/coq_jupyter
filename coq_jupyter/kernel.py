@@ -107,8 +107,8 @@ class CoqKernel(Kernel):
         try:
             self.log.info("Processing 'execute_request', code: \n{}\n".format(repr(code)))
 
-            if "roll_back_cell" in self._parent_header["content"]:
-                self._roll_back(self._parent_header["content"]["roll_back_cell"])
+            if "coq_kernel_roll_back_cell" in self._parent_header["content"]:
+                self._roll_back(self._parent_header["content"]["coq_kernel_roll_back_cell"])
 
             if code.strip("\n\r\t ") != "":
                 state_label_before = self._coqtop.tip
@@ -120,7 +120,7 @@ class CoqKernel(Kernel):
 
                 if not silent:
                     self.log.info("Sending 'execute_result', cell record:\n{}\n".format(repr(record)))
-                    self._send_execute_result(outputs, execution_id, evaluated, state_label_after)
+                    self._send_execute_result(outputs, execution_id, evaluated, False, state_label_after)
 
                 return self._build_ok_content(state_label_before)
             else:
@@ -170,7 +170,7 @@ class CoqKernel(Kernel):
                 record.rolled_back= True
 
                 # update content of rolled back cell
-                self._send_roll_back_update_display_data(record.parent_header, record.execution_id)
+                self._send_roll_back_update_display_data(record.parent_header, record.execution_id, record.evaluated, record.rolled_back)
 
                 # update cell state via kernel comms
                 for comm_id in self._kernel_comms:
@@ -195,10 +195,17 @@ class CoqKernel(Kernel):
             'traceback' : traceback.format_list(traceback.extract_tb(tb))
         }
 
-    def _build_display_data_content(self, text, html, execution_id):
+    def _build_display_data_content(self, text, html, execution_id, evaluated, rolled_back):
         return {
-            'data': { 'text/plain': text, 'text/html': html },
-            'metadata': {},
+            'data': {
+                'text/plain': text,
+                'text/html': html
+            },
+            'metadata': {
+                'coq_kernel_execution_id': execution_id,
+                'coq_kernel_evaluated': evaluated,
+                'coq_kernel_rolled_back': rolled_back
+             },
             'transient': { 'display_id': execution_id }
         }
 
@@ -231,13 +238,13 @@ class CoqKernel(Kernel):
         }
         self.session.send(self.iopub_socket, "comm_msg", content, None, None, None, None, None, None)
 
-    def _send_roll_back_update_display_data(self, parent_header, execution_id):
-        content = self._build_display_data_content(TEXT_ROLL_BACK_MESSAGE, HTML_ROLL_BACK_MESSAGE, execution_id)
+    def _send_roll_back_update_display_data(self, parent_header, execution_id, evaluated, rolled_back):
+        content = self._build_display_data_content(TEXT_ROLL_BACK_MESSAGE, HTML_ROLL_BACK_MESSAGE, execution_id, evaluated, rolled_back)
         self.session.send(self.iopub_socket, "update_display_data", content, parent_header, None, None, None, None, None)
 
-    def _send_execute_result(self, outputs, execution_id, evaluated, state_label_after):
+    def _send_execute_result(self, outputs, execution_id, evaluated, rolled_back, state_label_after):
         text = self._renderer.render_text_result(outputs)
         html = self._renderer.render_html_result(outputs, execution_id, evaluated)
-        content = self._build_display_data_content(text, html, execution_id)
+        content = self._build_display_data_content(text, html, execution_id, evaluated, rolled_back)
         content['execution_count'] = int(state_label_after)
         self.send_response(self.iopub_socket, 'execute_result', content)
