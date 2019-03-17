@@ -645,11 +645,11 @@ define([
       var original_append_execute_result = OutputArea.OutputArea.prototype.append_execute_result;
       OutputArea.OutputArea.prototype.append_execute_result = function(json) {
         var result = original_append_execute_result.call(this, json);
-        // Enable rollback button. This is done here since rollback button relies
+        // Enable rollback conrols. This is done here since rollback controls rely
         // on successfull operation of kernel.js script. In case frontend does not
-        // support kernel.js the button will remain hidden to end user providing
+        // support kernel.js the controls will remain hidden to end user providing
         // ad-hoc fallback.
-        $(this.element[0]).find(".coq_kernel_roll_back_button_area").toggle(true);
+        $(this.element[0]).find(".coq_kernel_roll_back_controls_area").toggle(true);
         return result;
       };
     },
@@ -749,7 +749,7 @@ define([
     update_cell_output: function(execution_id, evaluated, rolled_back) {
       $(".coq_kernel_output_area_" + execution_id).toggle(!rolled_back);
       $(".coq_kernel_roll_back_message_" + execution_id).toggle(rolled_back);
-      $(".coq_kernel_roll_back_button_area_" + execution_id).toggle(evaluated && !rolled_back);
+      $(".coq_kernel_roll_back_controls_area_" + execution_id).toggle(evaluated && !rolled_back);
     }
 
   };

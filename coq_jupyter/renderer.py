@@ -36,12 +36,13 @@ HTML_ROLL_BACK_MESSAGE = """
 
 TEXT_ROLL_BACK_MESSAGE = "Cell rolled back."
 
-HTML_ROLL_BACK_BUTTON_TEMPLATE = """
-<div class="coq_kernel_roll_back_button_area_{0} coq_kernel_roll_back_button_area" style="display: none; position: relative;">
+HTML_ROLL_BACK_CONTROLS_TEMPLATE = """
+<div class="coq_kernel_roll_back_controls_area_{0} coq_kernel_roll_back_controls_area" style="display: none; position: relative;">
     <button class="btn btn-default btn-xs coq_kernel_roll_back_button" style="margin-top: 5px;" onclick="CoqKernel.roll_back(this)">
         <i class="fa-step-backward fa"></i>
         <span class="toolbar-btn-label">Rollback cell</span>
     </button>
+
 </div>
 """
 
@@ -56,7 +57,7 @@ class Renderer:
         if success_output:
             html = HTML_OUTPUT_TEMPLATE.format(execution_id, self.render_text_result(outputs))
             html += HTML_ROLL_BACK_MESSAGE_TEMPLATE.format(execution_id)
-            html += HTML_ROLL_BACK_BUTTON_TEMPLATE.format(execution_id)
+            html += HTML_ROLL_BACK_CONTROLS_TEMPLATE.format(execution_id)
         else:
             html = HTML_ERROR_OUTPUT_TEMPLATE.format(execution_id, self.render_text_result(outputs))
 
