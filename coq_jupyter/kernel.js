@@ -712,6 +712,9 @@ define([
     },
 
     execute_cell: function(cell, code, callbacks, metadata) {
+      // deprecate any previous code executed using this cell
+      metadata.roll_back_cell = cell.metadata.execution_id
+
       // reuse "execute_request" message id as "execution_id" used by coq kernel
       // to track cell executions
       cell.metadata.execution_id = cell.coq_kernel_original_kernel.execute(code, callbacks, metadata);

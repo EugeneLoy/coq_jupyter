@@ -106,6 +106,10 @@ class CoqKernel(Kernel):
     def do_execute(self, code, silent, store_history=True, user_expressions=None, allow_stdin=False):
         try:
             self.log.info("Processing 'execute_request', code: \n{}\n".format(repr(code)))
+
+            if "roll_back_cell" in self._parent_header["content"]:
+                self._roll_back(self._parent_header["content"]["roll_back_cell"])
+
             if code.strip("\n\r\t ") != "":
                 state_label_before = self._coqtop.tip
                 (evaluated, outputs) = shutdown_on_coqtop_error(lambda self: self._coqtop.eval(code))(self)
