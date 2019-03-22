@@ -640,16 +640,20 @@ define([
           original_execute.call(this, stop_on_error)
       };
 
+      console.info('Coq kernel script: patching CodeCell.create_element.');
+      var original_create_element = CodeCell.CodeCell.prototype.create_element;
+      CodeCell.CodeCell.prototype.create_element = function() {
+        var cell = this;
+        setTimeout(function() { self.on_create_element(cell); }, 0);
+        return original_create_element.call(this);
+      };
+
       console.info('Coq kernel script: patching OutputArea.append_execute_result.');
 
       var original_append_execute_result = OutputArea.OutputArea.prototype.append_execute_result;
       OutputArea.OutputArea.prototype.append_execute_result = function(json) {
         var result = original_append_execute_result.call(this, json);
-        var cell = self.get_cell_by_element(this.element[0])
-        cell.metadata.coq_kernel_execution_id = json.metadata.coq_kernel_execution_id;
-        cell.metadata.coq_kernel_evaluated = json.metadata.coq_kernel_evaluated;
-        cell.metadata.coq_kernel_rolled_back = json.metadata.coq_kernel_rolled_back;
-        self.update_cell_output(cell);
+        self.on_append_execute_result(this, json);
         return result;
       };
     },
@@ -691,49 +695,116 @@ define([
     handle_kernel_comm_message: function(message) {
       if (message.content.data.comm_msg_type === "kernel_comm_opened") {
         console.info('Kernel comm opened. comm_id: ' + message.content.comm_id);
-        var cells = Jupyter.notebook.get_cells();
-        var history = message.content.data.history
-        for (var c = 0; c < cells.length; c++) {
-          for (var h = 0; h < history.length; h++) {
-            if (cells[c].metadata.coq_kernel_execution_id === history[h].execution_id) {
-              cells[c].metadata.coq_kernel_evaluated = history[h].evaluated;
-              cells[c].metadata.coq_kernel_rolled_back = history[h].rolled_back;
-              self.update_cell_output(cells[c]);
-            }
-          }
-        }
+        self.on_history_received(message.content.data.history);
       } else if (message.content.data.comm_msg_type === "cell_state") {
         console.info('Cell state updated. execution_id: ' + message.content.data.execution_id);
-        var cells = Jupyter.notebook.get_cells();
-        for (var c = 0; c < cells.length; c++) {
-          if (cells[c].metadata.coq_kernel_execution_id === message.content.data.execution_id) {
-            cells[c].metadata.coq_kernel_evaluated = message.content.data.evaluated;
-            cells[c].metadata.coq_kernel_rolled_back = message.content.data.rolled_back;
-            self.update_cell_output(cells[c]);
-          }
-        }
+        self.on_cell_state_received(message.content.data.execution_id, message.content.data.evaluated, message.content.data.rolled_back);
       } else {
         console.error('Unexpected comm message: ' + JSON.stringify(message));
       }
     },
 
     execute_cell: function(cell, code, callbacks, metadata) {
-      // init metadata if executing cell for the first time
-      if (cell.metadata.coq_kernel_metadata_initialized !== true) {
-        cell.metadata.coq_kernel_metadata_initialized = true;
-        cell.metadata.coq_kernel_auto_roll_back = true;
+      var previous_execution_id = self.get_execution_id(cell);
+
+      self.reset_metadata(cell);
+
+      if (cell.metadata.coq_kernel_metadata.auto_roll_back && previous_execution_id !== undefined) {
+        metadata.coq_kernel_roll_back_cell = previous_execution_id;
       }
 
-      // if needed, deprecate any previous code executed using this cell
-      if (cell.metadata.coq_kernel_auto_roll_back) {
-        metadata.coq_kernel_roll_back_cell = cell.metadata.coq_kernel_execution_id;
+      // reuse kernel message id as execution id for this cell
+      var execution_id = cell.coq_kernel_original_kernel.execute(code, callbacks, metadata);
+
+      self.bind_execution_id(cell, execution_id)
+
+      return execution_id;
+    },
+
+    on_append_execute_result: function(outputarea, json) {
+      var cell = self.get_cell_by_element(outputarea.element[0])
+      cell.metadata.coq_kernel_metadata.evaluated = json.metadata.coq_kernel_evaluated;
+      cell.metadata.coq_kernel_metadata.rolled_back = json.metadata.coq_kernel_rolled_back;
+      self.update_rich_cell_output(cell);
+    },
+
+    on_create_element: function(cell) {
+      if (!self.has_valid_metadata(cell)) {
+        self.reset_metadata(cell);
+      }
+      self.update_rich_cell_output(cell);
+    },
+
+    on_cell_state_received: function(execution_id, evaluated, rolled_back) {
+      var cells = Jupyter.notebook.get_cells();
+      for (var c = 0; c < cells.length; c++) {
+        if (self.has_valid_metadata(cells[c]) && self.get_execution_id(cells[c]) === execution_id) {
+          self.update_cell_state_metadata(cells[c], evaluated, rolled_back);
+          self.update_rich_cell_output(cells[c]);
+          break;
+        }
+      }
+    },
+
+    on_history_received: function(history) {
+      var cells = Jupyter.notebook.get_cells();
+      for (var c = 0; c < cells.length; c++) {
+        var execution_id = self.get_execution_id(cells[c]);
+
+        self.reset_metadata(cells[c]);
+        if (execution_id !== undefined) {
+          // rebind execution ids to cells. This is typically needed after loading
+          // since cell ids are not persisted.
+          self.bind_execution_id(cells[c], execution_id);
+        }
+
+        for (var h = 0; h < history.length; h++) {
+          if (self.get_execution_id(cells[c]) === history[h].execution_id) {
+            self.update_cell_state_metadata(cells[c], history[h].evaluated, history[h].rolled_back);
+            break;
+          }
+        }
+
+        self.update_rich_cell_output(cells[c]);
+      }
+    },
+
+    reset_metadata: function(cell) {
+      if (cell.metadata.coq_kernel_metadata === undefined) {
+        cell.metadata.coq_kernel_metadata = {
+          "auto_roll_back": true
+        };
       }
 
-      // reuse "execute_request" message id as "execution_id" used by coq kernel
-      // to track cell executions
-      cell.metadata.coq_kernel_execution_id = cell.coq_kernel_original_kernel.execute(code, callbacks, metadata);
+      cell.metadata.coq_kernel_metadata.execution_id = undefined;
+      cell.metadata.coq_kernel_metadata.cell_id = undefined;
+      cell.metadata.coq_kernel_metadata.evaluated = undefined;
+      cell.metadata.coq_kernel_metadata.rolled_back = undefined;
+    },
 
-      return cell.metadata.coq_kernel_execution_id;
+    has_valid_metadata: function(cell) {
+      return (
+        cell.metadata.coq_kernel_metadata !== undefined &&
+        cell.metadata.coq_kernel_metadata.cell_id === cell.cell_id &&
+        cell.metadata.coq_kernel_metadata.execution_id !== undefined &&
+        cell.metadata.coq_kernel_metadata.evaluated !== undefined &&
+        cell.metadata.coq_kernel_metadata.rolled_back !== undefined &&
+        cell.metadata.coq_kernel_metadata.auto_roll_back !== undefined
+      );
+    },
+
+    get_execution_id: function(cell) {
+      return (cell.metadata.coq_kernel_metadata || {}).execution_id;
+    },
+
+    bind_execution_id: function(cell, execution_id) {
+      cell.metadata.coq_kernel_metadata.execution_id = execution_id;
+      cell.metadata.coq_kernel_metadata.cell_id = cell.cell_id;
+    },
+
+    update_cell_state_metadata: function(cell, evaluated, rolled_back) {
+      cell.metadata.coq_kernel_metadata.evaluated = evaluated;
+      cell.metadata.coq_kernel_metadata.rolled_back = rolled_back;
     },
 
     roll_back_cell: function(cell) {
@@ -741,7 +812,7 @@ define([
 
       this.kernel_comm.send({
         'comm_msg_type': 'roll_back',
-        "execution_id": cell.metadata.coq_kernel_execution_id
+        "execution_id": self.get_execution_id(cell)
       });
     },
 
@@ -750,7 +821,7 @@ define([
     },
 
     toggle_auto_roll_back: function(input) {
-      this.get_cell_by_element(input).metadata.coq_kernel_auto_roll_back = input.checked;
+      this.get_cell_by_element(input).metadata.coq_kernel_metadata.auto_roll_back = input.checked;
     },
 
     get_cell_by_element: function(element) {
@@ -762,16 +833,27 @@ define([
       }
     },
 
-    update_cell_output: function(cell) {
-      var execution_id = cell.metadata.coq_kernel_execution_id;
-      var evaluated = cell.metadata.coq_kernel_evaluated;
-      var rolled_back = cell.metadata.coq_kernel_rolled_back;
-      var auto_roll_back = cell.metadata.coq_kernel_auto_roll_back;
+    update_rich_cell_output: function(cell) {
+      self.hide_rich_cell_output(cell);
 
-      $(cell.element[0]).find(".coq_kernel_output_area").toggle(!rolled_back);
-      $(cell.element[0]).find(".coq_kernel_roll_back_message").toggle(rolled_back);
-      $(cell.element[0]).find(".coq_kernel_roll_back_controls_area").toggle(evaluated && !rolled_back);
-      $(cell.element[0]).find(".coq_kernel_auto_roll_back_checkbox").prop('checked', auto_roll_back);
+      if (self.has_valid_metadata(cell)) {
+        var evaluated = cell.metadata.coq_kernel_metadata.evaluated;
+        var rolled_back = cell.metadata.coq_kernel_metadata.rolled_back;
+        var auto_roll_back = cell.metadata.coq_kernel_metadata.auto_roll_back;
+
+        $(cell.element[0]).find(".coq_kernel_output_area").toggle(!rolled_back);
+
+        $(cell.element[0]).find(".coq_kernel_status_message_area").toggle(!rolled_back)
+        $(cell.element[0]).find(".coq_kernel_rolled_back_status_message").toggle(rolled_back);
+
+        $(cell.element[0]).find(".coq_kernel_roll_back_controls_area").toggle(evaluated && !rolled_back);
+
+        $(cell.element[0]).find(".coq_kernel_auto_roll_back_checkbox").prop('checked', auto_roll_back);
+      }
+    },
+
+    hide_rich_cell_output: function(cell) {
+      $(cell.element[0]).find(".coq_kernel_rich_cell_output").toggle(false);
     }
 
   };

@@ -8,7 +8,7 @@ from traitlets import Unicode
 from uuid import uuid4
 from ipykernel.kernelbase import Kernel
 from .coqtop import Coqtop, CoqtopError
-from .renderer import Renderer, HTML_ROLL_BACK_MESSAGE, TEXT_ROLL_BACK_MESSAGE
+from .renderer import Renderer, HTML_ROLLED_BACK_STATUS_MESSAGE, TEXT_ROLLED_BACK_STATUS_MESSAGE
 
 
 __version__ = '1.4.0'
@@ -239,7 +239,7 @@ class CoqKernel(Kernel):
         self.session.send(self.iopub_socket, "comm_msg", content, None, None, None, None, None, None)
 
     def _send_roll_back_update_display_data(self, parent_header, execution_id, evaluated, rolled_back):
-        content = self._build_display_data_content(TEXT_ROLL_BACK_MESSAGE, HTML_ROLL_BACK_MESSAGE, execution_id, evaluated, rolled_back)
+        content = self._build_display_data_content(TEXT_ROLLED_BACK_STATUS_MESSAGE, HTML_ROLLED_BACK_STATUS_MESSAGE, execution_id, evaluated, rolled_back)
         self.session.send(self.iopub_socket, "update_display_data", content, parent_header, None, None, None, None, None)
 
     def _send_execute_result(self, outputs, execution_id, evaluated, rolled_back, state_label_after):
