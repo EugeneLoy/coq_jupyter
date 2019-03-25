@@ -16,15 +16,15 @@ define([
     version: '1.4.0',
 
     onload: function() {
-      console.info('Loading Coq kernel script, version: ' + this.version);
+      console.info('Loading Coq kernel script, version: ' + self.version);
 
       // TODO find better way to expose coq kernel
-      window.CoqKernel = this;
+      window.CoqKernel = self;
 
-      this.init_CodeMirror();
-      this.patch();
-      this.init_shortcuts();
-      this.init_kernel_comm();
+      self.init_CodeMirror();
+      self.patch();
+      self.init_shortcuts();
+      self.init_kernel_comm();
 
       Jupyter.notebook.kernel.events.on('kernel_ready.Kernel', function (evt, info) {
         self.init_kernel_comm();
@@ -686,8 +686,8 @@ define([
     init_kernel_comm: function() {
       console.info('Coq kernel script: opening kernel comm.');
 
-      this.kernel_comm = Jupyter.notebook.kernel.comm_manager.new_comm('coq_kernel.kernel_comm', {});
-      this.kernel_comm.on_msg(function(message) {
+      self.kernel_comm = Jupyter.notebook.kernel.comm_manager.new_comm('coq_kernel.kernel_comm', {});
+      self.kernel_comm.on_msg(function(message) {
         self.handle_kernel_comm_message(message);
       });
     },
@@ -810,18 +810,18 @@ define([
     roll_back_cell: function(cell) {
       $(cell.element[0]).find(".coq_kernel_roll_back_button").prop('disabled', true);
 
-      this.kernel_comm.send({
+      self.kernel_comm.send({
         'comm_msg_type': 'roll_back',
         "execution_id": self.get_execution_id(cell)
       });
     },
 
     roll_back: function(button) {
-      this.roll_back_cell(this.get_cell_by_element(button));
+      self.roll_back_cell(self.get_cell_by_element(button));
     },
 
     toggle_auto_roll_back: function(input) {
-      this.get_cell_by_element(input).metadata.coq_kernel_metadata.auto_roll_back = input.checked;
+      self.get_cell_by_element(input).metadata.coq_kernel_metadata.auto_roll_back = input.checked;
     },
 
     get_cell_by_element: function(element) {
