@@ -17,7 +17,7 @@ After that install using `pip` (works with python 2/3):
 
 There are number of convenience improvements over standard Jupyter notebook behaviour that are implemented to support Coq-specific use cases.
 
-By default, running cell will rollback any code that was executed in that cell before. If needed, this can be disabled on a per-cell basis (using `auto rollback` checkbox).
+By default, running cell will rollback any code that was executed in that cell before. If needed, this can be disabled on a per-cell basis (using `Auto rollback` checkbox).
 
 Manual cell rollback is also available using `Rollback cell` button (at the bottom of executed cell) or shortcut (`Ctrl+Backspace`).
 
