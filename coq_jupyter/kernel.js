@@ -26,10 +26,6 @@ define([
       self.init_shortcuts();
       self.init_kernel_comm();
 
-      Jupyter.notebook.kernel.events.on('kernel_ready.Kernel', function (evt, info) {
-        self.init_kernel_comm();
-      });
-
       console.info('Coq kernel script loaded.');
     },
 
@@ -684,12 +680,38 @@ define([
     },
 
     init_kernel_comm: function() {
-      console.info('Coq kernel script: opening kernel comm.');
+      if (Jupyter.notebook.kernel) {
+        console.info('Coq kernel script: initializing kernel comm.');
+        Jupyter.notebook.kernel.events.on('kernel_ready.Kernel', function (evt, info) {
+          self.open_kernel_comm();
+        });
+        self.open_kernel_comm();
+      } else {
+        console.info('Coq kernel script: kernel is not ready - postponing kernel comm initialization.');
+        setTimeout(self.init_kernel_comm,  100);
+      }
+    },
 
-      self.kernel_comm = Jupyter.notebook.kernel.comm_manager.new_comm('coq_kernel.kernel_comm', {});
+    open_kernel_comm: function() {
+      console.info('Coq kernel script: opening kernel comm.');
+      if (self.kernel_comm !== undefined) {
+        self.close_kernel_comm();
+      }
+      self.kernel_comm = Jupyter.notebook.kernel.comm_manager.new_comm('coq_kernel.kernel_comm');
       self.kernel_comm.on_msg(function(message) {
         self.handle_kernel_comm_message(message);
       });
+      console.info('Coq kernel script: kernel comm opened.');
+    },
+
+    close_kernel_comm: function() {
+      console.info('Coq kernel script: closing kernel comm : ' + self.kernel_comm.comm_id);
+      try {
+        self.kernel_comm.close();
+        Jupyter.notebook.kernel.comm_manager.unregister_comm(self.kernel_comm);
+      } catch(e) {
+        console.error(e);
+      }
     },
 
     handle_kernel_comm_message: function(message) {
