@@ -2,7 +2,7 @@
 
 A [Jupyter](https://jupyter.org/) kernel for [Coq](https://coq.inria.fr/).
 
-You can try it online in [Binder](https://mybinder.org/v2/gh/EugeneLoy/coq_jupyter_demo/master?filepath=demo.ipynb).
+You can try it [online in Binder](https://mybinder.org/v2/gh/EugeneLoy/coq_jupyter_demo/master?filepath=demo.ipynb).
 
 ## Installation
 
