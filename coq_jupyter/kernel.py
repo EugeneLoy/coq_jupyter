@@ -11,7 +11,7 @@ from .coqtop import Coqtop, CoqtopError
 from .renderer import Renderer, HTML_ROLLED_BACK_STATUS_MESSAGE, TEXT_ROLLED_BACK_STATUS_MESSAGE
 
 
-__version__ = '1.5.0'
+__version__ = '1.5.1'
 
 
 CELL_COMM_TARGET_NAME = "coq_kernel.kernel_comm"
