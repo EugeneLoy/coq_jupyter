@@ -7,9 +7,13 @@ class KernelTests(jupyter_kernel_test.KernelTests):
     kernel_name = "coq"
     language_name = "coq"
 
-    def _build_sum_command(self, lhs, rhs):
-        result = str(lhs + rhs)
-        command = "Compute {} + {}.".format(lhs, rhs)
+    _sum_rhs = 1
+
+    def _build_sum_command(self):
+        lhs = 100
+        self._sum_rhs += 1
+        result = str(lhs + self._sum_rhs)
+        command = "Compute {} + {}.".format(lhs, self._sum_rhs)
         return (result, command)
 
     def _execute_cell(self, code):
@@ -41,24 +45,24 @@ class KernelTests(jupyter_kernel_test.KernelTests):
         self.assertEqual(len(output_msgs), 0)
 
     def test_coq_jupyter____executing_one_command____prints_computed_command_result(self):
-        (expected_result, command) = self._build_sum_command(100, 1)
+        (expected_result, command) = self._build_sum_command()
         result = self._execute_cell(command)
         self.assertIn(expected_result, result)
 
     def test_coq_jupyter____executing_one_command____does_not_print_command(self):
-        (expected_result, command) = self._build_sum_command(100, 2)
+        (expected_result, command) = self._build_sum_command()
         result = self._execute_cell(command)
         self.assertNotIn(command, result)
 
     def test_coq_jupyter____executing_compute_command_when_not_proving____does_not_print_proving_context(self):
-        (expected_result, command) = self._build_sum_command(100, 3)
+        (expected_result, command) = self._build_sum_command()
         result = self._execute_cell(command)
         self.assertNotIn("proving:", result)
         self.assertNotIn("subgoal", result)
 
     def test_coq_jupyter____executing_multiple_commands____prints_computed_command_results(self):
-        (expected_result1, command1) = self._build_sum_command(100, 4)
-        (expected_result2, command2) = self._build_sum_command(100, 5)
+        (expected_result1, command1) = self._build_sum_command()
+        (expected_result2, command2) = self._build_sum_command()
         result = self._execute_cell(command1 + " " + command2)
         self.assertIn(expected_result1, result)
         self.assertIn(expected_result2, result)
@@ -68,7 +72,7 @@ class KernelTests(jupyter_kernel_test.KernelTests):
         self.assertIn("1 subgoal", result)
         self.assertIn("Proving: t1", result)
 
-        result = self._execute_cell(self._build_sum_command(100, 6)[1])
+        result = self._execute_cell(self._build_sum_command()[1])
         self.assertIn("1 subgoal", result)
         self.assertIn("Proving: t1", result)
 
@@ -77,7 +81,7 @@ class KernelTests(jupyter_kernel_test.KernelTests):
         self.assertIn("i1 := I : True", result)
         self.assertIn("Proving: t1", result)
 
-        result = self._execute_cell(self._build_sum_command(100, 7)[1])
+        result = self._execute_cell(self._build_sum_command()[1])
         self.assertIn("1 subgoal", result)
         self.assertIn("i1 := I : True", result)
         self.assertIn("Proving: t1", result)
@@ -88,7 +92,7 @@ class KernelTests(jupyter_kernel_test.KernelTests):
         self.assertNotIn("i1 := I : True", result)
         self.assertNotIn("Proving:", result)
 
-        result = self._execute_cell(self._build_sum_command(100, 8)[1])
+        result = self._execute_cell(self._build_sum_command()[1])
         self.assertNotIn("1 subgoal", result)
         self.assertNotIn("No more subgoals", result)
         self.assertNotIn("i1 := I : True", result)
@@ -186,19 +190,19 @@ class KernelTests(jupyter_kernel_test.KernelTests):
         self.assertNotIn("<error>", result)
 
     def test_coq_jupyter____when_executing_command_that_results_in_notice_message____does_not_print_notice_message_level(self):
-        (_, command) = self._build_sum_command(100, 9)
+        (_, command) = self._build_sum_command()
         result = self._execute_cell(command)
 
         self.assertNotIn("notice", result.lower())
 
     def test_coq_jupyter____executing_code_with_unclosed_comment____prints_error(self):
-        (_, command) = self._build_sum_command(100, 10)
+        (_, command) = self._build_sum_command()
         result = self._execute_cell(command + " (* ")
 
         self.assertIn("Unterminated comment", result)
 
     def test_coq_jupyter____executing_code_surrounded_by_unclosed_comments____prints_evaluation_result(self):
-        (expected_result, command) = self._build_sum_command(100, 11)
+        (expected_result, command) = self._build_sum_command()
         result = self._execute_cell("(* comment *)" + command + "(* comment *)")
 
         self.assertIn(expected_result, result)
