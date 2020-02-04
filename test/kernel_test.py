@@ -7,13 +7,13 @@ class KernelTests(jupyter_kernel_test.KernelTests):
     kernel_name = "coq"
     language_name = "coq"
 
-    _sum_rhs = 1
+    _sum_rhs = iter(range(1, 100))
 
     def _build_sum_command(self):
         lhs = 100
-        self._sum_rhs += 1
-        result = str(lhs + self._sum_rhs)
-        command = "Compute {} + {}.".format(lhs, self._sum_rhs)
+        rhs = next(self._sum_rhs)
+        result = str(lhs + rhs)
+        command = "Compute {} + {}.".format(lhs, rhs)
         return (result, command)
 
     def _execute_cell(self, code):
@@ -164,14 +164,14 @@ class KernelTests(jupyter_kernel_test.KernelTests):
             self._execute_cell(commited_definition[1])
 
             result = self._execute_cell(code)
-            self.assertIn(expected_error_message, result, "fixture: {}".format(repr(fixture[f])))
+            self.assertIn(expected_error_message, result, msg="fixture: {}".format(repr(fixture[f])))
 
             # verify roll back
             result = self._execute_cell("Print All.")
-            self.assertIn(commited_definition[0], result, "fixture: {}".format(repr(fixture[f])))
-            self.assertNotIn(invalid_definition, result, "fixture: {}".format(repr(fixture[f])))
-            self.assertNotIn(valid_definitions[0], result, "fixture: {}".format(repr(fixture[f])))
-            self.assertNotIn(valid_definitions[1], result, "fixture: {}".format(repr(fixture[f])))
+            self.assertIn(commited_definition[0], result, msg="fixture: {}".format(repr(fixture[f])))
+            self.assertNotIn(invalid_definition, result, msg="fixture: {}".format(repr(fixture[f])))
+            self.assertNotIn(valid_definitions[0], result, msg="fixture: {}".format(repr(fixture[f])))
+            self.assertNotIn(valid_definitions[1], result, msg="fixture: {}".format(repr(fixture[f])))
 
     def test_coq_jupyter____when_executing_command_that_results_in_warning____prints_warning(self):
         # this test ensures fix of the following:
@@ -229,14 +229,47 @@ class KernelTests(jupyter_kernel_test.KernelTests):
         """
         result = self._execute_cell(code)
 
-        self.assertIn("2", result)
-        self.assertNotIn("error", result.lower())
+        self.assertIn("2", result, msg="Code:\n{}".format(code))
+        self.assertNotIn("error", result.lower(), msg="Code:\n{}".format(code))
 
     def test_coq_jupyter____executing_long_running_code_____prints_evaluation_result(self):
         code = "Goal True. timeout 10 (repeat eapply proj1)."
         result = self._execute_cell(code)
 
         self.assertIn("Tactic timeout", result)
+
+    def test_coq_jupyter____executing_code_with_undotted_separators____prints_evaluation_result(self):
+        fixture = [
+            ("-", "-", ""),
+            ("*", "*", ""),
+            ("+", "+", ""),
+            ("{", "{", "}"),
+            ("1:{", "1 : {", "}"),
+            ("[G1]:{", "[ g2_' ] : {", "}"),
+            ("---", "---", "")
+        ]
+        for (opening_separator1, opening_separator2, closing_separator) in fixture:
+            (expected_results, commands) = zip(*[self._build_sum_command() for _ in range(4)])
+            code = """
+            Goal True /\ True.
+            split ; [ refine ?[G1] | refine ?[g2_'] ].
+            {0} {3}
+                {4}
+              exact I.
+            {2}
+            {1} {5}
+                {6}
+              exact I.
+            {2}
+            Qed.
+            """.format(opening_separator1, opening_separator2, closing_separator, *commands)
+
+            result = self._execute_cell(code)
+
+            for expected_result in expected_results:
+                self.assertIn(expected_result, result, msg="Code:\n{}".format(code))
+                self.assertNotIn("error", result.lower(), msg="Code:\n{}".format(code))
+
 
 
 if __name__ == '__main__':

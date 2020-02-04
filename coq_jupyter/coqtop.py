@@ -13,6 +13,8 @@ from subprocess import check_output
 
 LANGUAGE_VERSION_PATTERN = re.compile(r'version (\d+(\.\d+)+)')
 
+SEPARATOR_PATTERN = r"((?:\[\s*[a-zA-Z][a-zA-Z0-9_']*\s*\]\s*\:\s*\{)|(?:\d+\s*\:\s*\{)|(?:\{)|(?:\})|(?:\++)|(?:\-+)|(?:\*+)|(?:\.))"
+
 INIT_COMMAND = '<call val="Init"> <option val="none"/> </call>'
 STATUS_COMMAND = '<call val="Status"> <bool val="true"/> </call>'
 GOAL_COMMAND = '<call val="Goal"> <unit/> </call>'
@@ -88,12 +90,7 @@ class Coqtop:
         try:
             tip_before = self.tip
 
-            # split code into sentences (headlesssly)
-            sentences = code.split(".")
-            leftover = sentences[-1]
-            sentences = deque(map(lambda s: s + ".", sentences[0:-1]))
-            if leftover.strip(" \t\n\r") != "":
-                sentences.append(leftover)
+            sentences = deque(self._get_sentences(code))
 
             # Attempt to evaluate sentences in code
             code_evaluated = True
@@ -165,6 +162,15 @@ class Coqtop:
     def roll_back_to(self, state_id):
         self._execute_command(self._build_edit_at_command(state_id))
         self.tip = state_id
+
+    def _get_sentences(self, code):
+        parts = re.split(SEPARATOR_PATTERN, code)
+        pi = iter(parts)
+        sentences = [p + next(pi, '') for p in pi]
+        if sentences[-1].strip(" \t\n\r") != "":
+            return sentences
+        else:
+            return sentences[:-1]
 
     def _execute_command(self, command, allow_fail=False):
         self.log.debug("Executing coqtop command: {}".format(repr(command)))
