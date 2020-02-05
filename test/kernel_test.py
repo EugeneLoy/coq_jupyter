@@ -7,11 +7,11 @@ class KernelTests(jupyter_kernel_test.KernelTests):
     kernel_name = "coq"
     language_name = "coq"
 
-    _sum_rhs = iter(range(1, 100))
+    _counter = iter(range(1, 100))
 
     def _build_sum_command(self):
         lhs = 100
-        rhs = next(self._sum_rhs)
+        rhs = next(self._counter)
         result = str(lhs + rhs)
         command = "Compute {} + {}.".format(lhs, rhs)
         return (result, command)
@@ -271,18 +271,21 @@ class KernelTests(jupyter_kernel_test.KernelTests):
                 self.assertNotIn("error", result.lower(), msg="Code:\n{}".format(code))
 
     def test_coq_jupyter____executing_code_that_completes_subproof_while_having_unfocused_goals____prints_info_about_unfocused_goals(self):
+        marker1 = next(self._counter)
+        marker2 = next(self._counter)
+        marker3 = next(self._counter)
         code = """
-        Goal 1=1 /\ 2=2 /\ 3=3.
+        Goal {0}={0} /\ {1}={1} /\ {2}={2}.
         split ; [ | split].
-        2:{
+        2:{{
             easy.
-        """
+        """.format(marker1, marker2, marker3)
 
         result = self._execute_cell(code)
 
         self.assertIn("This subproof is complete, but there are some unfocused goals:", result, msg="Code:\n{}".format(code))
-        self.assertIn("1 = 1", result, msg="Code:\n{}".format(code))
-        self.assertIn("3 = 3", result, msg="Code:\n{}".format(code))
+        self.assertIn("{0} = {0}".format(marker1), result, msg="Code:\n{}".format(code))
+        self.assertIn("{0} = {0}".format(marker3), result, msg="Code:\n{}".format(code))
         self.assertNotIn("error", result.lower(), msg="Code:\n{}".format(code))
 
 if __name__ == '__main__':
