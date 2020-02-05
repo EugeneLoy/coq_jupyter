@@ -245,22 +245,27 @@ class Coqtop:
     def _get_goals_content(self, reply):
         goals = self._unwrap_goals(reply)
         current_goals = list(goals.find("./list").findall("./goal"))
+        background_before_goals = list(goals.find("./list[2]").findall("./pair/list[1]/goal"))
+        background_after_goals = list(goals.find("./list[2]").findall("./pair/list[2]/goal"))
+        background_goals = background_before_goals + background_after_goals
 
-        if len(current_goals) == 0:
+        if len(current_goals) == 0 and len(background_goals) == 0:
             return "No more subgoals"
-        elif len(current_goals) == 1:
-            header_content = "1 subgoal"
+        elif len(current_goals) == 0 and len(background_goals) > 0:
+            header_content = "This subproof is complete, but there are some unfocused goals:"
+            hypotheses_content = ""
+            display_goals = background_goals
         else:
-            header_content = "{} subgoals".format(len(current_goals))
-
-        hypotheses_content = "\n".join(map(self._format_richpp, current_goals[0].findall("./list/richpp")))
+            header_content = "1 subgoal" if len(current_goals) == 1 else "{} subgoals".format(len(current_goals))
+            hypotheses_content = "\n".join(map(self._format_richpp, current_goals[0].findall("./list/richpp")))
+            display_goals = current_goals
 
         goals_content = "\n".join(map(
             lambda d: "{}\n{}".format(
-                "{}/{} -----------".format(d[0] + 1, len(current_goals))[0:15],
+                "-------------- ({}/{})".format(d[0] + 1, len(display_goals))[-20:],
                 self._format_richpp(d[1].find("./richpp"))
             ),
-            enumerate(current_goals)
+            enumerate(display_goals)
         ))
 
         return "\n\n".join(filter(lambda c: c != "", [header_content, hypotheses_content, goals_content]))

@@ -238,7 +238,7 @@ class KernelTests(jupyter_kernel_test.KernelTests):
 
         self.assertIn("Tactic timeout", result)
 
-    def test_coq_jupyter____executing_code_with_undotted_separators____prints_evaluation_result(self):
+    def test_coq_jupyter____executing_code_with_undotted_separators____prints_evaluation_result_for_every_statement(self):
         fixture = [
             ("-", "-", ""),
             ("*", "*", ""),
@@ -270,7 +270,20 @@ class KernelTests(jupyter_kernel_test.KernelTests):
                 self.assertIn(expected_result, result, msg="Code:\n{}".format(code))
                 self.assertNotIn("error", result.lower(), msg="Code:\n{}".format(code))
 
+    def test_coq_jupyter____executing_code_that_completes_subproof_while_having_unfocused_goals____prints_info_about_unfocused_goals(self):
+        code = """
+        Goal 1=1 /\ 2=2 /\ 3=3.
+        split ; [ | split].
+        2:{
+            easy.
+        """
 
+        result = self._execute_cell(code)
+
+        self.assertIn("This subproof is complete, but there are some unfocused goals:", result, msg="Code:\n{}".format(code))
+        self.assertIn("1 = 1", result, msg="Code:\n{}".format(code))
+        self.assertIn("3 = 3", result, msg="Code:\n{}".format(code))
+        self.assertNotIn("error", result.lower(), msg="Code:\n{}".format(code))
 
 if __name__ == '__main__':
     unittest.main()
