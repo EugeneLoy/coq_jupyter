@@ -6,7 +6,7 @@ See: https://github.com/EugeneLoy/coq_jupyter
 
 setup(
     name='coq_jupyter',
-    version='1.5.2',
+    version='1.5.3',
     packages=['coq_jupyter'],
     description='Coq kernel for Jupyter',
     long_description=readme,
