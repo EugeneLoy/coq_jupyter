@@ -1,5 +1,6 @@
 import unittest
 import jupyter_kernel_test
+import os
 
 class KernelTests(jupyter_kernel_test.KernelTests):
 
@@ -243,11 +244,15 @@ class KernelTests(jupyter_kernel_test.KernelTests):
             ("-", "-", ""),
             ("*", "*", ""),
             ("+", "+", ""),
-            ("{", "{", "}"),
-            ("1:{", "1 : {", "}"),
-            ("[G1]:{", "[ g2_' ] : {", "}"),
-            ("---", "---", "")
+            ("---", "---", ""),
         ]
+        if os.environ.get("LEGACY_COQ_VERSION", "0") == "0":
+            fixture += [
+                ("{", "{", "}"),
+                ("1:{", "1 : {", "}"),
+                ("[G1]:{", "[ g2_' ] : {", "}")
+            ]
+
         for (opening_separator1, opening_separator2, closing_separator) in fixture:
             (expected_results, commands) = zip(*[self._build_sum_command() for _ in range(4)])
             code = """
@@ -277,14 +282,13 @@ class KernelTests(jupyter_kernel_test.KernelTests):
         code = """
         Goal {0}={0} /\ {1}={1} /\ {2}={2}.
         split ; [ | split].
-        2:{{
-            easy.
+        - easy.
         """.format(marker1, marker2, marker3)
 
         result = self._execute_cell(code)
 
         self.assertIn("This subproof is complete, but there are some unfocused goals:", result, msg="Code:\n{}".format(code))
-        self.assertIn("{0} = {0}".format(marker1), result, msg="Code:\n{}".format(code))
+        self.assertIn("{0} = {0}".format(marker2), result, msg="Code:\n{}".format(code))
         self.assertIn("{0} = {0}".format(marker3), result, msg="Code:\n{}".format(code))
         self.assertNotIn("error", result.lower(), msg="Code:\n{}".format(code))
 
