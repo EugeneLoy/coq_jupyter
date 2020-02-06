@@ -4,7 +4,7 @@ import sys
 import traceback
 import time
 
-from traitlets import Unicode
+from traitlets import Unicode, Undefined
 from uuid import uuid4
 from ipykernel.kernelbase import Kernel
 from .coqtop import Coqtop, CoqtopError
@@ -90,13 +90,14 @@ class CoqKernel(Kernel):
         return self._coqtop.version
 
 
+    coqtop_executable = Unicode().tag(config=True)
     coqtop_args = Unicode().tag(config=True)
 
 
     @shutdown_on_coqtop_error
     def __init__(self, **kwargs):
         Kernel.__init__(self, **kwargs)
-        self._coqtop = Coqtop(self, self.coqtop_args)
+        self._coqtop = Coqtop(self, self.coqtop_executable, self.coqtop_args)
         self._journal = CellJournal(self)
         self._renderer = Renderer()
         self._kernel_comms = []

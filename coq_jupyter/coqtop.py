@@ -9,7 +9,7 @@ from builtins import zip
 from future.moves.itertools import zip_longest
 from collections import deque
 from pexpect.exceptions import ExceptionPexpect
-from subprocess import check_output
+from subprocess import check_output, CalledProcessError
 
 LANGUAGE_VERSION_PATTERN = re.compile(r'version (\d+(\.\d+)+)')
 
@@ -43,26 +43,30 @@ class CoqtopError(Exception): pass
 
 class Coqtop:
 
-    def __init__(self, kernel, coqtop_args):
+    def __init__(self, kernel, coqtop_executable, coqtop_args):
         try:
             self.log = kernel.log
 
-            # locate coqtop executable
-            for cmd in ["coqidetop", "coqtop"]:
+            locate_coqtop = coqtop_executable == ""
+            cmd_candidates = ["coqidetop", "coqtop"] if locate_coqtop else [coqtop_executable]
+            for cmd in cmd_candidates:
                 try:
                     banner = check_output([cmd, '--version']).decode('utf-8')
                     break
-                except:
+                except OSError:
                     cmd = None
 
             if cmd is None:
-                raise CoqtopError("Failed to locate 'coqidetop' or 'coqtop' executables")
+                raise CoqtopError("Failed to run coqtop executable (tried the following: {}).".format(cmd_candidates))
 
             version = LANGUAGE_VERSION_PATTERN.search(banner).group(1)
             (parsed_version, version_8_9) = zip(*zip_longest(map(int, version.split(".")), [8, 9], fillvalue=0))
 
-            if cmd == "coqtop" and parsed_version >= version_8_9:
-                raise CoqtopError("Failed to locate 'coqidetop' executable ('coqtop' has been found but is insufficient since v8.9)")
+            if cmd.endswith("coqtop") and parsed_version >= version_8_9:
+                if locate_coqtop:
+                    raise CoqtopError("Failed to locate 'coqidetop' executable ('coqtop' has been found but is insufficient since v8.9)")
+                else:
+                    raise CoqtopError("'coqidetop' executable is requered since Coq v8.9")
 
             self.cmd = cmd
             self.version = version
@@ -74,10 +78,10 @@ class Coqtop:
                 "encoding": "utf-8",
                 "codec_errors": "replace"
             }
-            if self.cmd == "coqidetop":
-                self._coqtop = pexpect.spawn("coqidetop -main-channel stdfds {}".format(coqtop_args), **spawn_args)
+            if self.cmd.endswith("coqidetop"):
+                self._coqtop = pexpect.spawn("{} -main-channel stdfds {}".format(self.cmd, coqtop_args), **spawn_args)
             else:
-                self._coqtop = pexpect.spawn("coqtop -toploop coqidetop -main-channel stdfds {}".format(coqtop_args), **spawn_args)
+                self._coqtop = pexpect.spawn("{} -toploop coqidetop -main-channel stdfds {}".format(self.cmd, coqtop_args), **spawn_args)
 
             # perform init
             (reply, _) = self._execute_command(INIT_COMMAND)

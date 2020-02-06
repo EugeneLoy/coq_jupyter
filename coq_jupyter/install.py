@@ -7,8 +7,10 @@ import shutil
 from jupyter_client.kernelspec import KernelSpecManager
 from IPython.utils.tempdir import TemporaryDirectory
 
-def kernel_json(display_name, coqtop_args):
+def kernel_json(display_name, coqtop_executable, coqtop_args):
     argv = [sys.executable, "-m", "coq_jupyter", "-f", "{connection_file}"]
+    if coqtop_executable is not None:
+        argv.append('--CoqKernel.coqtop_executable="{}"'.format(coqtop_executable))
     if coqtop_args is not None:
         argv.append('--CoqKernel.coqtop_args="{}"'.format(coqtop_args))
 
@@ -18,12 +20,12 @@ def kernel_json(display_name, coqtop_args):
         "language": "coq",
     }
 
-def install_kernel_spec(user, prefix, kernel_name, kernel_display_name, coqtop_args):
+def install_kernel_spec(user, prefix, kernel_name, kernel_display_name, coqtop_executable, coqtop_args):
     with TemporaryDirectory() as td:
         os.chmod(td, 0o755) # Starts off as 700, not user readable
 
         with open(os.path.join(td, 'kernel.json'), 'w') as f:
-            json.dump(kernel_json(kernel_display_name, coqtop_args), f, sort_keys=True)
+            json.dump(kernel_json(kernel_display_name, coqtop_executable, coqtop_args), f, sort_keys=True)
 
         shutil.copyfile(
             os.path.join(os.path.dirname(__file__), "kernel.js"),
@@ -46,6 +48,7 @@ def main(argv=None):
     ap.add_argument('--prefix', help="Install to the given prefix. Kernelspec will be installed in {PREFIX}/share/jupyter/kernels/")
     ap.add_argument('--kernel-name', help="Kernelspec name. Default is 'coq'.")
     ap.add_argument('--kernel-display-name', help="Kernelspec name that will be used in UI. Default is 'Coq'.")
+    ap.add_argument('--coqtop-executable', help="coqidetop executable (coqtop for coq versions before 8.9.0).")
     ap.add_argument('--coqtop-args', help="Arguments to add when launching coqtop.")
 
     args = ap.parse_args(argv)
@@ -64,6 +67,7 @@ def main(argv=None):
         args.prefix,
         args.kernel_name,
         args.kernel_display_name,
+        args.coqtop_executable,
         args.coqtop_args
     )
 
