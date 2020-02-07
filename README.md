@@ -16,7 +16,7 @@ After that install using `pip` (works with python 2/3):
 Alternatively, use Conda to install both `coqidetop` and `coq_jupyter`. For this,
 install Conda (either Anaconda, Miniconda, Minimamba) and do:
 ```
-$ conda config --add channels conda-forge 
+$ conda config --add channels conda-forge
 $ conda create -n coq coq-jupyter
 $ conda activate coq
 ```
@@ -30,13 +30,21 @@ By default, running cell will rollback any code that was executed in that cell b
 
 Manual cell rollback is also available using `Rollback cell` button (at the bottom of executed cell) or shortcut (`Ctrl+Backspace`).
 
-## coqtop arguments
+## Configuring kernel
 
-Use `--coqtop-args` to supply additional arguments to `coqidetop`/`coqtop` when installing kernel. In this case you might also want to set custom kernel name/display name using `--kernel-name`/`--kernel-display-name`.
+You can configure kernel by passing additional arguments during kernel installation:
+
+* `--kernel-name` - name of the kernel
+
+* `--kernel-display-name` - name of the kernel that will be displayed in Jupyter UI
+
+* `--coqtop-executable` - specifies `coqidetop`/`coqtop` executable
+
+* `--coqtop-args` - additional arguments to supply to `coqidetop`/`coqtop`
 
 For example, to add kernel that instructs `coqidetop` to load `/workspace/init.v` on startup:
 
-    python -m coq_jupyter.install --kernel-name=coq_with_init --kernel-display-name="Coq (with init.v)" --coqtop-args="-l /workspace/init.v"
+    python -m coq_jupyter.install --kernel-name=coq_with_init --kernel-display-name="Coq (with init.v)" --coqtop-executable="/usr/bin/coqidetop" --coqtop-args="-l /workspace/init.v"
 
 ## Contributing
 
