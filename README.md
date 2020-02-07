@@ -26,9 +26,13 @@ $ conda activate coq
 
 There are number of convenience improvements over standard Jupyter notebook behaviour that are implemented to support Coq-specific use cases.
 
-By default, running cell will rollback any code that was executed in that cell before. If needed, this can be disabled on a per-cell basis (using `Auto rollback` checkbox).
+Running cell will rollback any code that was executed in that cell before. This will also trigger rollback for any dependent cells.
 
-Manual cell rollback is also available using `Rollback cell` button (at the bottom of executed cell) or shortcut (`Ctrl+Backspace`).
+![](https://raw.githubusercontent.com/EugeneLoy/coq_jupyter/master/demo.gif)
+
+Auto rollback can be disabled on a per-cell basis (using checkbox).
+
+Manual cell rollback is also available using `Rollback cell` button or shortcut (`Ctrl+Backspace`).
 
 ## Configuring kernel
 
