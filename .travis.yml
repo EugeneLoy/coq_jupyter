@@ -1,32 +1,41 @@
-os: linux
 
-dist: bionic
+language: bash
 
-language: generic
+jobs:
+  include:
+  - os: linux
+    dist: bionic
+    env: COQ_PACKAGE=coq-8.6.1 LEGACY_COQ_VERSION=1
+  - os: linux
+    dist: bionic
+    env: COQ_PACKAGE=coq-8.7.2 LEGACY_COQ_VERSION=1
+  - os: linux
+    dist: bionic
+    env: COQ_PACKAGE=coq-8.8.2 LEGACY_COQ_VERSION=1
+  - os: linux
+    dist: bionic
+    env: COQ_PACKAGE=coq-8.9.1ide LEGACY_COQ_VERSION=0
+  - os: windows
+    env: COQ_PACKAGE=8.10.2 LEGACY_COQ_VERSION=0
+  - os: windows
+    env: COQ_PACKAGE=8.11.0 LEGACY_COQ_VERSION=0
 
-env:
-  - COQ_PACKAGE=coq-8.6.1 PYTHON_VERSION=3 LEGACY_COQ_VERSION=1
-  - COQ_PACKAGE=coq-8.7.2 PYTHON_VERSION=3 LEGACY_COQ_VERSION=1
-  - COQ_PACKAGE=coq-8.8.2 PYTHON_VERSION=3 LEGACY_COQ_VERSION=1
-  - COQ_PACKAGE=coq-8.9.1ide PYTHON_VERSION=3 LEGACY_COQ_VERSION=0
-  - COQ_PACKAGE=coq-8.6.1 PYTHON_VERSION=2 LEGACY_COQ_VERSION=1
-  - COQ_PACKAGE=coq-8.7.2 PYTHON_VERSION=2 LEGACY_COQ_VERSION=1
-  - COQ_PACKAGE=coq-8.8.2 PYTHON_VERSION=2 LEGACY_COQ_VERSION=1
-  - COQ_PACKAGE=coq-8.9.1ide PYTHON_VERSION=2 LEGACY_COQ_VERSION=0
 
 install:
-  - sudo add-apt-repository -y ppa:jgross-h/many-coq-versions
-  - sudo apt-get update
-  - sudo apt-get install -y $COQ_PACKAGE
-  - sudo apt-get install -y python3-pip
-  - if [ $PYTHON_VERSION = 2 ]; then sudo apt-get install -y python-pip; fi
-  - pip3 install --user setuptools wheel
-  - pip3 install --user --upgrade 'jupyter_kernel_test>=0.3' 'tornado==5.1.1'
+  - if [ $TRAVIS_OS_NAME = linux ]; then sudo add-apt-repository -y ppa:jgross-h/many-coq-versions; fi
+  - if [ $TRAVIS_OS_NAME = linux ]; then sudo apt-get update; fi
+  - if [ $TRAVIS_OS_NAME = linux ]; then sudo apt-get install -y $COQ_PACKAGE; fi
+  - if [ $TRAVIS_OS_NAME = linux ]; then sudo apt-get install -y python3-pip; fi
+  - if [ $TRAVIS_OS_NAME = linux ]; then shopt -s expand_aliases; alias py=python3; fi
+  - if [ $TRAVIS_OS_NAME = windows ]; then choco install coq --version=$COQ_PACKAGE; fi
+  - if [ $TRAVIS_OS_NAME = windows ]; then choco install python3; fi  
+  - py --version
+  - py -m pip install --user setuptools wheel
+  - py -m pip install --user --upgrade 'jupyter_kernel_test>=0.3' 'tornado==5.1.1'
+
 
 script:
-  - python3 setup.py sdist bdist_wheel
-  - if [ $PYTHON_VERSION = 3 ]; then pip3 install --user --upgrade --force-reinstall dist/coq_jupyter-*.tar.gz; fi
-  - if [ $PYTHON_VERSION = 3 ]; then python3 -m coq_jupyter.install; fi
-  - if [ $PYTHON_VERSION = 2 ]; then pip install --user --upgrade --force-reinstall dist/coq_jupyter-*.tar.gz; fi
-  - if [ $PYTHON_VERSION = 2 ]; then python -m coq_jupyter.install; fi
-  - python3 test/kernel_test.py -v
+  - py setup.py sdist bdist_wheel
+  - py -m pip install --user --upgrade --force-reinstall dist/coq_jupyter-*.tar.gz
+  - py -m coq_jupyter.install
+  - py test/kernel_test.py -v
