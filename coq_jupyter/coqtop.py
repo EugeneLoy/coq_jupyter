@@ -79,7 +79,7 @@ class Coqtop:
             # run coqtop executable
             spawn_args = {
                 "echo": False,
-                "encoding": "utf-8",
+                #"encoding": "utf-8",
                 "codec_errors": "replace"
             }
             if self.cmd.endswith("coqidetop"):
