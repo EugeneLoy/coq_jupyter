@@ -78,9 +78,9 @@ class Coqtop:
 
             # run coqtop executable
             spawn_args = {
-                "echo": False,
+                "echo": False
                 #"encoding": "utf-8",
-                "codec_errors": "replace"
+                #"codec_errors": "replace"
             }
             if self.cmd.endswith("coqidetop"):
                 self._coqtop = spawn("{} -main-channel stdfds {}".format(self.cmd, coqtop_args), **spawn_args)
