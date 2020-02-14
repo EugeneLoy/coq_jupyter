@@ -1,6 +1,5 @@
 from __future__ import unicode_literals
 
-import pexpect
 import re
 import xml.etree.ElementTree as ET
 
@@ -8,8 +7,13 @@ from future.utils import raise_with_traceback
 from builtins import zip
 from future.moves.itertools import zip_longest
 from collections import deque
-from pexpect.exceptions import ExceptionPexpect
 from subprocess import check_output, CalledProcessError
+
+try:
+    from wexpect import spawn
+except:
+    from pexpect import spawn
+
 
 LANGUAGE_VERSION_PATTERN = re.compile(r'version (\d+(\.\d+)+)')
 
@@ -79,9 +83,9 @@ class Coqtop:
                 "codec_errors": "replace"
             }
             if self.cmd.endswith("coqidetop"):
-                self._coqtop = pexpect.spawn("{} -main-channel stdfds {}".format(self.cmd, coqtop_args), **spawn_args)
+                self._coqtop = spawn("{} -main-channel stdfds {}".format(self.cmd, coqtop_args), **spawn_args)
             else:
-                self._coqtop = pexpect.spawn("{} -toploop coqidetop -main-channel stdfds {}".format(self.cmd, coqtop_args), **spawn_args)
+                self._coqtop = spawn("{} -toploop coqidetop -main-channel stdfds {}".format(self.cmd, coqtop_args), **spawn_args)
 
             # perform init
             (reply, _) = self._execute_command(INIT_COMMAND)

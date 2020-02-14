@@ -19,7 +19,8 @@ setup(
         'IPython',
         'ipykernel',
         'future',
-        'pexpect>=4.0'
+        'pexpect>=4.0',
+        "wexpect;platform_system=='Windows'"
     ],
     classifiers=[
         'Development Status :: 4 - Beta',
