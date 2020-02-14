@@ -28,7 +28,8 @@ install:
   - if [ $TRAVIS_OS_NAME = linux ]; then sudo apt-get install -y python3-pip; fi
   - if [ $TRAVIS_OS_NAME = linux ]; then shopt -s expand_aliases; alias py=python3; fi
   - if [ $TRAVIS_OS_NAME = windows ]; then choco install coq --version=$COQ_PACKAGE; fi
-  - if [ $TRAVIS_OS_NAME = windows ]; then choco install python3; fi  
+  - if [ $TRAVIS_OS_NAME = windows ]; then choco install python3; fi
+  - if [ $TRAVIS_OS_NAME = windows ]; then refreshenv; fi
   - py --version
   - py -m pip install --user setuptools wheel
   - py -m pip install --user --upgrade 'jupyter_kernel_test>=0.3' 'tornado==5.1.1'
