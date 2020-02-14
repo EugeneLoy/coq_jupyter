@@ -11,8 +11,16 @@ from subprocess import check_output, CalledProcessError
 
 try:
     from wexpect import spawn
+    spawn_args = {
+        "echo": False
+    }
 except:
     from pexpect import spawn
+    spawn_args = {
+        "echo": False,
+        "encoding": "utf-8",
+        "codec_errors": "replace"
+    }
 
 
 LANGUAGE_VERSION_PATTERN = re.compile(r'version (\d+(\.\d+)+)')
@@ -51,6 +59,7 @@ class Coqtop:
         try:
             self.log = kernel.log
 
+            # locate coqtop executable
             locate_coqtop = coqtop_executable == ""
             cmd_candidates = ["coqidetop", "coqtop"] if locate_coqtop else [coqtop_executable]
             for cmd in cmd_candidates:
@@ -77,17 +86,12 @@ class Coqtop:
             self.banner = banner
 
             # run coqtop executable
-            spawn_args = {
-                "echo": False,
-                "encoding": "utf-8",
-                "codec_errors": "replace"
-            }
             if self.cmd.endswith("coqidetop"):
                 self._coqtop = spawn("{} -main-channel stdfds {}".format(self.cmd, coqtop_args), **spawn_args)
             else:
                 self._coqtop = spawn("{} -toploop coqidetop -main-channel stdfds {}".format(self.cmd, coqtop_args), **spawn_args)
 
-            # perform init
+            # perform coqtop init
             (reply, _) = self._execute_command(INIT_COMMAND)
             self.tip = reply.find("./state_id").get("val")
 
@@ -182,7 +186,7 @@ class Coqtop:
 
     def _execute_command(self, command, allow_fail=False):
         self.log.debug("Executing coqtop command: {}".format(repr(command)))
-        self._coqtop.send(command + "\n")
+        self._coqtop.sendline(command)
         out_of_band_replies = []
         while True:
             self._coqtop.expect(REPLY_PATTERNS)
