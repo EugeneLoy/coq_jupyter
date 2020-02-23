@@ -3,20 +3,20 @@ language: bash
 
 jobs:
   include:
-  - os: linux
-    dist: bionic
-    env: COQ_PACKAGE=coq-8.6.1 LEGACY_COQ_VERSION=1
-  - os: linux
-    dist: bionic
-    env: COQ_PACKAGE=coq-8.7.2 LEGACY_COQ_VERSION=1
-  - os: linux
-    dist: bionic
-    env: COQ_PACKAGE=coq-8.8.2 LEGACY_COQ_VERSION=1
-  - os: linux
-    dist: bionic
-    env: COQ_PACKAGE=coq-8.9.1ide LEGACY_COQ_VERSION=0
-  - os: windows
-    env: COQ_PACKAGE=8.10.2 LEGACY_COQ_VERSION=0
+#   - os: linux
+#     dist: bionic
+#     env: COQ_PACKAGE=coq-8.6.1 LEGACY_COQ_VERSION=1
+#   - os: linux
+#     dist: bionic
+#     env: COQ_PACKAGE=coq-8.7.2 LEGACY_COQ_VERSION=1
+#   - os: linux
+#     dist: bionic
+#     env: COQ_PACKAGE=coq-8.8.2 LEGACY_COQ_VERSION=1
+#   - os: linux
+#     dist: bionic
+#     env: COQ_PACKAGE=coq-8.9.1ide LEGACY_COQ_VERSION=0
+#   - os: windows
+#     env: COQ_PACKAGE=8.10.2 LEGACY_COQ_VERSION=0
   - os: windows
     env: COQ_PACKAGE=8.11.0 LEGACY_COQ_VERSION=0
 
@@ -37,7 +37,8 @@ install:
 
 
 script:
-  - py setup.py sdist bdist_wheel
-  - py -m pip install --user --upgrade --force-reinstall dist/coq_jupyter-*.tar.gz
-  - py -m coq_jupyter.install
-  - py test/kernel_test.py -v
+#   - py setup.py sdist bdist_wheel
+#   - py -m pip install --user --upgrade --force-reinstall dist/coq_jupyter-*.tar.gz
+#   - py -m coq_jupyter.install
+#   - py test/kernel_test.py -v
+  - py temp.py
