@@ -30,6 +30,8 @@ child.sendline("{} -main-channel stdfds {}".format("coqidetop", ""))
 
 child.send("""<call val="Init"> <option val="none"/> </call>\n""")
 
+print("\n\n\n>>>>\n\n\n")
+
 child.expect('state_id')
 
 print(child.before)
