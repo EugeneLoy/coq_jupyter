@@ -33,7 +33,7 @@ child.send("""<call val="Init"> <option val="none"/> </call>\n""")
 
 print("\n\n\n>>>>\n\n\n")
 
-child.expect('state_id')
+child.expect('1')
 
 print(child.before)
 child.sendline('exit')
