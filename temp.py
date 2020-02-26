@@ -26,14 +26,14 @@ REPLY_PATTERNS = [
 
 child = spawn('cmd.exe', **spawn_args)
 child.expect('>')
-#child.sendline("{} -main-channel stdfds {}".format("coqidetop", ""))
-child.sendline("{}  {}".format("coqidetop", ""))
+child.sendline("{} -main-channel stdfds {}".format("coqidetop", ""))
 
-child.send("""<call val="Init"> <option val="none"/> </call>\n""")
+
+child.send("""<call val="Quit"> <unit/> </call>\n""")
 
 print("\n\n\n>>>>\n\n\n")
 
-child.expect('1')
+child.expect('>')
 
 print(child.before)
 child.sendline('exit')
