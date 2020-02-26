@@ -1,4 +1,5 @@
 from wexpect import spawn
+import re
 
 spawn_args = {
     "echo": False
