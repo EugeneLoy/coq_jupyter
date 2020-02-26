@@ -19,14 +19,14 @@ REPLY_PATTERNS = [
     ]
 ]
 
-c = spawn("{} -main-channel stdfds {}".format("coqidetop", ""), **spawn_args)
-c.send("Check True. Quit.\n")
-c.expect(wexpect.wexpect_util.EOF)
-print(c.before)
+#c = spawn("{} -main-channel stdfds {}".format("coqidetop", ""), **spawn_args)
+#c.send("Check True. Quit.\n")
+#c.expect(wexpect.wexpect_util.EOF)
+#print(c.before)
 
-#child = spawn('cmd.exe')
-#child.expect('>')
-#child.sendline('ls')
-#child.expect('>')
-#print(child.before)
-#child.sendline('exit')
+child = spawn('cmd.exe')
+child.expect('>')
+child.sendline('ls')
+child.expect('>')
+print(child.before)
+child.sendline('exit')
