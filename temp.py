@@ -19,8 +19,8 @@ REPLY_PATTERNS = [
 ]
 
 c = spawn("{} -main-channel stdfds {}".format("coqidetop", ""), **spawn_args)
-c.send("Check True.\n")
-c.expect(REPLY_PATTERNS)
+c.send("Check True. Quit.\n")
+c.expect(wexpect.wexpect_util.EOF)
 print(c.before)
 
 #child = spawn('cmd.exe')
