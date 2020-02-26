@@ -19,7 +19,7 @@ REPLY_PATTERNS = [
 ]
 
 c = spawn("{} -main-channel stdfds {}".format("coqidetop", ""), **spawn_args)
-c.send(command + "\n")
+c.send("Check True.\n")
 c.expect(REPLY_PATTERNS)
 print(c.before)
 
