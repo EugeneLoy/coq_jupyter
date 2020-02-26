@@ -26,7 +26,19 @@ REPLY_PATTERNS = [
 
 child = spawn('cmd.exe')
 child.expect('>')
-child.sendline('ls')
+child.sendline("{} -main-channel stdfds {}".format("coqidetop", ""))
+
+child.send("Check True. Quit.\n")
+
 child.expect('>')
+
 print(child.before)
 child.sendline('exit')
+
+
+# child = spawn('cmd.exe')
+# child.expect('>')
+# child.sendline('ls')
+# child.expect('>')
+# print(child.before)
+# child.sendline('exit')
