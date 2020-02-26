@@ -30,7 +30,7 @@ install:
   - if [ $TRAVIS_OS_NAME = windows ]; then choco install coq --version=$COQ_PACKAGE; fi
   - if [ $TRAVIS_OS_NAME = windows ]; then choco install python3; fi
   - if [ $TRAVIS_OS_NAME = windows ]; then export PATH="$PATH:/c/Coq/bin"; fi
-#  - if [ $TRAVIS_OS_NAME = windows ]; then export WEXPECT_SPAWN_CLASS=SpawnPipe; fi
+  - if [ $TRAVIS_OS_NAME = windows ]; then export WEXPECT_SPAWN_CLASS=SpawnPipe; fi
   - py --version
   - py -m pip install --user setuptools wheel wexpect
   - py -m pip install --user --upgrade 'jupyter_kernel_test>=0.3' 'tornado==5.1.1'
