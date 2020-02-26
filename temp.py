@@ -24,7 +24,7 @@ REPLY_PATTERNS = [
 #c.expect(wexpect.wexpect_util.EOF)
 #print(c.before)
 
-child = spawn('cmd.exe')
+child = spawn('cmd.exe', **spawn_args)
 child.expect('>')
 child.sendline("{} -main-channel stdfds {}".format("coqidetop", ""))
 
