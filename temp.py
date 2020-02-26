@@ -26,7 +26,7 @@ REPLY_PATTERNS = [
 
 child = spawn('cmd.exe')
 child.expect('>')
-child.sendline("{} -main-channel stdfds {}".format("coqidetop", ""))
+child.sendline("{} -main-channel stdfds {}".format("coqtop", ""))
 
 child.send("Check True. Quit.\n")
 
