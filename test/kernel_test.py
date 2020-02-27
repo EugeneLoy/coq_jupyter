@@ -202,12 +202,12 @@ class KernelTests(jupyter_kernel_test.KernelTests):
 
         self.assertIn("Unterminated comment", result)
 
-    def test_coq_jupyter____executing_code_surrounded_by_unclosed_comments____prints_evaluation_result(self):
-        (expected_result, command) = self._build_sum_command()
-        result = self._execute_cell("(* comment *)" + command + "(* comment *)")
+#     def test_coq_jupyter____executing_code_surrounded_by_unclosed_comments____prints_evaluation_result(self):
+#         (expected_result, command) = self._build_sum_command()
+#         result = self._execute_cell("(* comment *)" + command + "(* comment *)")
 
-        self.assertIn(expected_result, result)
-        self.assertNotIn("error", result.lower())
+#         self.assertIn(expected_result, result)
+#         self.assertNotIn("error", result.lower())
 
     def test_coq_jupyter____executing_code_with_comments_woven_in____prints_evaluation_result(self):
         result = self._execute_cell("Check (* some comment with '.' in the middle *) I.")
@@ -215,10 +215,10 @@ class KernelTests(jupyter_kernel_test.KernelTests):
         self.assertIn("True", result)
         self.assertNotIn("error", result.lower())
 
-    def test_coq_jupyter____executing_code_comments_only____does_not_result_in_error(self):
-        result = self._execute_cell("(* comment *)")
+#     def test_coq_jupyter____executing_code_comments_only____does_not_result_in_error(self):
+#         result = self._execute_cell("(* comment *)")
 
-        self.assertNotIn("error", result.lower())
+#         self.assertNotIn("error", result.lower())
 
     def test_coq_jupyter____executing_code_with_non_xml_symbols____prints_evaluation_result(self):
         code = """
