@@ -16,6 +16,8 @@ jobs:
     dist: bionic
     env: COQ_PACKAGE=coq-8.9.1ide LEGACY_COQ_VERSION=0
   - os: windows
+    env: COQ_PACKAGE=8.9.1 LEGACY_COQ_VERSION=0
+  - os: windows
     env: COQ_PACKAGE=8.10.2 LEGACY_COQ_VERSION=0
   - os: windows
     env: COQ_PACKAGE=8.11.0 LEGACY_COQ_VERSION=0
