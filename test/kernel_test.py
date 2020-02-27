@@ -126,53 +126,53 @@ class KernelTests(jupyter_kernel_test.KernelTests):
             expected_error_message
         )
 
-    def test_coq_jupyter____executing_commands_with_error____prints_error_and_rolls_back(self):
-        cases_with_reference_error = [
-            self._build_commands_with_error_fixture(
-                3,
-                t,
-                "Definition t{}_{} := I.",
-                "Definition t{}_{} := INVALID_REFERENCE.",
-                "Error: The reference INVALID_REFERENCE was not found"
-            )
-            for t in (1,2,3)
-        ]
-        cases_with_syntax_error = [
-            self._build_commands_with_error_fixture(
-                6,
-                t,
-                "Definition t{}_{} := I.",
-                "Definition t{}_{} := (I.",
-                "Syntax error: ',' or ')' expected after [constr:operconstr"
-            )
-            for t in (1,2,3)
-        ]
-        cases_with_incomplete_command_error = [
-            self._build_commands_with_error_fixture(
-                9,
-                t,
-                "Definition t{}_{} := I.",
-                "Definition t{}_{} := I",
-                "Syntax error: '.' expected after"
-            )
-            for t in (1,2,3)
-        ]
-        fixture = cases_with_reference_error + cases_with_syntax_error + cases_with_incomplete_command_error
+#     def test_coq_jupyter____executing_commands_with_error____prints_error_and_rolls_back(self):
+#         cases_with_reference_error = [
+#             self._build_commands_with_error_fixture(
+#                 3,
+#                 t,
+#                 "Definition t{}_{} := I.",
+#                 "Definition t{}_{} := INVALID_REFERENCE.",
+#                 "Error: The reference INVALID_REFERENCE was not found"
+#             )
+#             for t in (1,2,3)
+#         ]
+#         cases_with_syntax_error = [
+#             self._build_commands_with_error_fixture(
+#                 6,
+#                 t,
+#                 "Definition t{}_{} := I.",
+#                 "Definition t{}_{} := (I.",
+#                 "Syntax error: ',' or ')' expected after [constr:operconstr"
+#             )
+#             for t in (1,2,3)
+#         ]
+#         cases_with_incomplete_command_error = [
+#             self._build_commands_with_error_fixture(
+#                 9,
+#                 t,
+#                 "Definition t{}_{} := I.",
+#                 "Definition t{}_{} := I",
+#                 "Syntax error: '.' expected after"
+#             )
+#             for t in (1,2,3)
+#         ]
+#         fixture = cases_with_reference_error + cases_with_syntax_error + cases_with_incomplete_command_error
 
-        for f in range(len(fixture)):
-            (invalid_definition, valid_definitions, commited_definition, code, expected_error_message) = fixture[f]
+#         for f in range(len(fixture)):
+#             (invalid_definition, valid_definitions, commited_definition, code, expected_error_message) = fixture[f]
 
-            self._execute_cell(commited_definition[1])
+#             self._execute_cell(commited_definition[1])
 
-            result = self._execute_cell(code)
-            self.assertIn(expected_error_message, result, msg="fixture: {}".format(repr(fixture[f])))
+#             result = self._execute_cell(code)
+#             self.assertIn(expected_error_message, result, msg="fixture: {}".format(repr(fixture[f])))
 
-            # verify roll back
-            result = self._execute_cell("Print All.")
-            self.assertIn(commited_definition[0], result, msg="fixture: {}".format(repr(fixture[f])))
-            self.assertNotIn(invalid_definition, result, msg="fixture: {}".format(repr(fixture[f])))
-            self.assertNotIn(valid_definitions[0], result, msg="fixture: {}".format(repr(fixture[f])))
-            self.assertNotIn(valid_definitions[1], result, msg="fixture: {}".format(repr(fixture[f])))
+#             # verify roll back
+#             result = self._execute_cell("Print All.")
+#             self.assertIn(commited_definition[0], result, msg="fixture: {}".format(repr(fixture[f])))
+#             self.assertNotIn(invalid_definition, result, msg="fixture: {}".format(repr(fixture[f])))
+#             self.assertNotIn(valid_definitions[0], result, msg="fixture: {}".format(repr(fixture[f])))
+#             self.assertNotIn(valid_definitions[1], result, msg="fixture: {}".format(repr(fixture[f])))
 
     def test_coq_jupyter____when_executing_command_that_results_in_warning____prints_warning(self):
         # this test ensures fix of the following:
