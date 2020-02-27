@@ -29,7 +29,7 @@ child.expect('>')
 child.sendline("{} -main-channel stdfds {}".format("coqidetop", ""))
 
 
-child.send("""<call val="Quit"> <unit/> </call>\n""")
+child.sendline("""<call val="Quit"> <unit/> </call>\n""")
 
 print("\n\n\n>>>>\n\n\n")
 
