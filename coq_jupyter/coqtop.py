@@ -15,21 +15,6 @@ LANGUAGE_VERSION_PATTERN = re.compile(r'version (\d+(\.\d+)+)')
 
 SEPARATOR_PATTERN = r"((?:\[\s*[a-zA-Z][a-zA-Z0-9_']*\s*\]\s*\:\s*\{)|(?:\d+\s*\:\s*\{)|(?:\{)|(?:\})|(?:\++)|(?:\-+)|(?:\*+)|(?:\.))"
 
-INIT_COMMAND = '<call val="Init"> <option val="none"/> </call>'
-STATUS_COMMAND = '<call val="Status"> <bool val="true"/> </call>'
-GOAL_COMMAND = '<call val="Goal"> <unit/> </call>'
-
-ADD_COMMAND_TEMPLATE = """
-<call val="Add">
-  <pair>
-    <pair> <string></string> <int>0</int> </pair>
-    <pair> <state_id val="" /> <bool val="false" /> </pair>
-  </pair>
-</call>
-"""
-
-EDIT_AT_COMMAND_TEMPLATE = '<call val="Edit_at"> <state_id val="{0}"/> </call>'
-
 REPLY_PATTERNS = [
     re.compile(r'\<{0}.*?\>.+?\<\/{0}\>'.format(t), re.DOTALL)
     for t in [
@@ -84,7 +69,7 @@ class Coqtop:
                 self._coqtop = pexpect.spawn("{} -toploop coqidetop -main-channel stdfds {}".format(self.cmd, coqtop_args), **spawn_args)
 
             # perform init
-            (reply, _) = self._execute_command(INIT_COMMAND)
+            (reply, _) = self._execute_command(self._build_init_command())
             self.tip = reply.find("./state_id").get("val")
 
         except Exception as e:
@@ -103,7 +88,7 @@ class Coqtop:
                 sentence = sentences.popleft()
 
                 (add_reply, _) = self._execute_command(self._build_add_command(sentence, self.tip), allow_fail=True)
-                (status_reply, out_of_band_status_replies) = self._execute_command(STATUS_COMMAND, allow_fail=True)
+                (status_reply, out_of_band_status_replies) = self._execute_command(self._build_status_command(), allow_fail=True)
 
                 sentence_evaluated = self._is_good(add_reply) and self._is_good(status_reply)
                 errors = [
@@ -151,7 +136,7 @@ class Coqtop:
                     outputs.append("Proving: {}".format(self._get_proof_name(status_reply)))
 
                 # Get goal state
-                (goal_reply, _) = self._execute_command(GOAL_COMMAND)
+                (goal_reply, _) = self._execute_command(self._build_goal_command())
                 if self._has_goals(goal_reply):
                     outputs.append(self._get_goals_content(goal_reply))
             else:
@@ -295,11 +280,27 @@ class Coqtop:
             else:
                 return False
 
+    def _build_init_command(self):
+        return '<call val="Init"> <option val="none"/> </call>'
+
+    def _build_status_command(self):
+        return '<call val="Status"> <bool val="true"/> </call>'
+
+    def _build_goal_command(self):
+        return '<call val="Goal"> <unit/> </call>'
+
     def _build_edit_at_command(self, state_id):
-        return EDIT_AT_COMMAND_TEMPLATE.format(state_id)
+        return '<call val="Edit_at"> <state_id val="{0}"/> </call>'.format(state_id)
 
     def _build_add_command(self, sentence, tip):
-        command = ET.fromstring(ADD_COMMAND_TEMPLATE)
+        command = ET.fromstring("""
+            <call val="Add">
+              <pair>
+                <pair> <string></string> <int>0</int> </pair>
+                <pair> <state_id val="" /> <bool val="false" /> </pair>
+              </pair>
+            </call>
+        """)
         command.find("./pair/pair/string").text = sentence
         command.find("./pair/pair[2]/state_id").set("val", tip)
         return ET.tostring(command, encoding='utf8').decode('utf8')
