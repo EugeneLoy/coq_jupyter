@@ -5,11 +5,8 @@ import re
 import xml.etree.ElementTree as ET
 
 from future.utils import raise_with_traceback
-from builtins import zip
-from future.moves.itertools import zip_longest
 from collections import deque
-from pexpect.exceptions import ExceptionPexpect
-from subprocess import check_output, CalledProcessError
+from subprocess import check_output
 
 LANGUAGE_VERSION_PATTERN = re.compile(r'version (\d+(\.\d+)+)')
 
@@ -24,7 +21,9 @@ REPLY_PATTERNS = [
     ]
 ]
 
+
 class CoqtopError(Exception): pass
+
 
 class Coqtop:
 
@@ -44,18 +43,15 @@ class Coqtop:
             if cmd is None:
                 raise CoqtopError("Failed to run coqtop executable (tried the following: {}).".format(cmd_candidates))
 
-            version = LANGUAGE_VERSION_PATTERN.search(banner).group(1)
-            (parsed_version, version_8_9) = zip(*zip_longest(map(int, version.split(".")), [8, 9], fillvalue=0))
+            self.cmd = cmd
+            self.banner = banner
+            self.version = self._parse_version(self.banner)
 
-            if cmd.endswith("coqtop") and parsed_version >= version_8_9:
+            if self.cmd.endswith("coqtop") and self.version >= (8, 9, 0):
                 if locate_coqtop:
                     raise CoqtopError("Failed to locate 'coqidetop' executable ('coqtop' has been found but is insufficient since v8.9)")
                 else:
                     raise CoqtopError("'coqidetop' executable is requered since Coq v8.9")
-
-            self.cmd = cmd
-            self.version = version
-            self.banner = banner
 
             # run coqtop executable
             spawn_args = {
@@ -181,6 +177,11 @@ class Coqtop:
             else:
                 out_of_band_replies.append(reply)
 
+    def _parse_version(self, banner):
+        version_string = LANGUAGE_VERSION_PATTERN.search(banner).group(1)
+        version = tuple(map(int, version_string.split(".")))
+        return version + (0,) * (3 - len(version))
+
     def _parse(self, reply):
         return ET.fromstring(reply.replace("&nbsp;", " "))
 
@@ -293,14 +294,42 @@ class Coqtop:
         return '<call val="Edit_at"> <state_id val="{0}"/> </call>'.format(state_id)
 
     def _build_add_command(self, sentence, tip):
-        command = ET.fromstring("""
-            <call val="Add">
-              <pair>
-                <pair> <string></string> <int>0</int> </pair>
-                <pair> <state_id val="" /> <bool val="false" /> </pair>
-              </pair>
-            </call>
-        """)
-        command.find("./pair/pair/string").text = sentence
-        command.find("./pair/pair[2]/state_id").set("val", tip)
+        if self.version >= (8, 15, 0):
+            command = ET.fromstring("""
+                <call val="Add">
+                  <pair>
+                    <pair>
+                      <pair>
+                        <pair>
+                          <string></string>
+                          <int>0</int>
+                        </pair>
+                        <pair>
+                          <state_id val=""/>
+                          <bool val="false"/>
+                        </pair>
+                      </pair>
+                      <int>0</int>
+                    </pair>
+                    <pair>
+                      <int>0</int>
+                      <int>0</int>
+                    </pair>
+                  </pair>
+                </call>
+            """)
+            command.find("./pair/pair/pair/pair/string").text = sentence
+            command.find("./pair/pair/pair/pair[2]/state_id").set("val", tip)
+        else:
+            command = ET.fromstring("""
+                <call val="Add">
+                  <pair>
+                    <pair> <string></string> <int>0</int> </pair>
+                    <pair> <state_id val="" /> <bool val="false" /> </pair>
+                  </pair>
+                </call>
+            """)
+            command.find("./pair/pair/string").text = sentence
+            command.find("./pair/pair[2]/state_id").set("val", tip)
+
         return ET.tostring(command, encoding='utf8').decode('utf8')
