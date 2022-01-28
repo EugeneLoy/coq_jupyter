@@ -6,9 +6,9 @@ You can try it [online in Binder](https://mybinder.org/v2/gh/EugeneLoy/coq_jupyt
 
 ## Installation
 
-Make sure that CoqIDE (8.6 or newer) is installed and `coqidetop` (or `coqtop` for coq versions before 8.9.0) is in your `PATH`.
+Make sure that CoqIDE (8.6 or newer) is installed and `coqidetop` or `coqidetop.opt` (`coqtop` for Coq versions before 8.9.0) is in your `PATH`.
 
-After that install using `pip` (works with python 2/3):
+After that install using `pip`:
 
     pip install coq-jupyter
     python -m coq_jupyter.install
@@ -32,7 +32,7 @@ Manual cell rollback is also available using `Rollback cell` button (at the bott
 
 ## coqtop arguments
 
-Use `--coqtop-args` to supply additional arguments to `coqidetop`/`coqtop` when installing kernel. In this case you might also want to set custom kernel name/display name using `--kernel-name`/`--kernel-display-name`.
+Use `--coqtop-args` to supply additional arguments to `coqidetop`/`coqidetop.opt`/`coqtop` when installing kernel. In this case you might also want to set custom kernel name/display name using `--kernel-name`/`--kernel-display-name`.
 
 For example, to add kernel that instructs `coqidetop` to load `/workspace/init.v` on startup:
 
