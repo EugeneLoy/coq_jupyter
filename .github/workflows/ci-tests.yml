@@ -1,0 +1,59 @@
+name: CI Tests
+
+on:
+  push:
+    branches: [ master ]
+  
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-18.04
+    strategy:
+      fail-fast: false
+      matrix:
+        coq-install-command:
+        #- 'sudo add-apt-repository -y ppa:jgross-h/many-coq-versions && sudo apt-get update && sudo apt-get install coq-8.6.1'
+        #- 'sudo add-apt-repository -y ppa:jgross-h/many-coq-versions && sudo apt-get update && sudo apt-get install coq-8.7.2'
+        #- 'sudo add-apt-repository -y ppa:jgross-h/many-coq-versions && sudo apt-get update && sudo apt-get install coq-8.8.2'
+        - 'conda install -c conda-forge coq=8.9.1'
+        - 'conda install -c conda-forge coq=8.10.1'
+        - 'conda install -c conda-forge coq=8.11.2'
+        - 'conda install -c conda-forge coq=8.12.2'
+    
+    steps:
+    - uses: actions/checkout@v2
+    
+    - uses: conda-incubator/setup-miniconda@v2
+      with:
+        auto-update-conda: true
+        python-version: "3.10"
+        
+    - name: Install dependencies
+      shell: bash -l {0}
+      run: |
+        pip install --upgrade pip setuptools wheel
+        ${{ matrix.coq-install-command }}
+        
+    - name: Build kernel
+      shell: bash -l {0}
+      run: |
+        python setup.py sdist bdist_wheel
+        
+    - name: Install kernel
+      shell: bash -l {0}
+      run: |
+        pip install --user --upgrade --force-reinstall dist/coq_jupyter-*.tar.gz 'jupyter_client<=6.1.12' 'jupyter_kernel_test<=0.3'
+        python -m coq_jupyter.install
+        
+    - name: Print versions
+      shell: bash -l {0}
+      run: |
+        python --version
+        coqtop --version
+        
+    - name: Run tests
+      shell: bash -l {0}
+      run: |
+        python test/kernel_test.py -v
