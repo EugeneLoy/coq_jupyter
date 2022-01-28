@@ -87,7 +87,7 @@ class CoqKernel(Kernel):
 
     @property
     def language_version(self):
-        return self._coqtop.version
+        return ".".join(map(str, self._coqtop.version))
 
 
     coqtop_executable = Unicode().tag(config=True)

@@ -181,7 +181,7 @@ class Coqtop:
     def _parse_version(self, banner):
         version_string = LANGUAGE_VERSION_PATTERN.search(banner).group(1)
         version = tuple(map(int, version_string.split(".")))
-        return version + (0,) * (3 - len(version))
+        return tuple(version + (0,) * (3 - len(version)))
 
     def _parse(self, reply):
         return ET.fromstring(reply.replace("&nbsp;", " "))
