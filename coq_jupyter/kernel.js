@@ -13,7 +13,7 @@ define([
 
   var self = {
 
-    version: '1.5.3',
+    version: '1.6.0',
 
     onload: function() {
       console.info('Loading Coq kernel script, version: ' + self.version);
