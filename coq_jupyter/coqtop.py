@@ -33,7 +33,7 @@ class Coqtop:
             self.log = kernel.log
 
             locate_coqtop = coqtop_executable == ""
-            cmd_candidates = ["coqidetop", "coqtop"] if locate_coqtop else [coqtop_executable]
+            cmd_candidates = ["coqidetop.opt", "coqidetop", "coqtop"] if locate_coqtop else [coqtop_executable]
             for cmd in cmd_candidates:
                 try:
                     banner = check_output([cmd, '--version']).decode('utf-8')
@@ -50,9 +50,9 @@ class Coqtop:
 
             if self.cmd.endswith("coqtop") and self.version >= (8, 9, 0):
                 if locate_coqtop:
-                    raise CoqtopError("Failed to locate 'coqidetop' executable ('coqtop' has been found but is insufficient since v8.9)")
+                    raise CoqtopError("Failed to locate 'coqidetop.opt'/'coqidetop' executable ('coqtop' has been found but is insufficient since v8.9)")
                 else:
-                    raise CoqtopError("'coqidetop' executable is required since Coq v8.9")
+                    raise CoqtopError("'coqidetop.opt'/'coqidetop' executable is required since Coq v8.9")
 
             # run coqtop executable
             spawn_args = {
@@ -60,7 +60,7 @@ class Coqtop:
                 "encoding": "utf-8",
                 "codec_errors": "replace"
             }
-            if self.cmd.endswith("coqidetop"):
+            if self.cmd.endswith("coqidetop.opt") or self.cmd.endswith("coqidetop"):
                 self._coqtop = pexpect.spawn("{} -main-channel stdfds {}".format(self.cmd, coqtop_args), **spawn_args)
             else:
                 self._coqtop = pexpect.spawn("{} -toploop coqidetop -main-channel stdfds {}".format(self.cmd, coqtop_args), **spawn_args)
