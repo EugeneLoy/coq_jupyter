@@ -144,7 +144,7 @@ class KernelTests(jupyter_kernel_test.KernelTests):
                 t,
                 "Definition t{}_{} := I.",
                 "Definition t{}_{} := (I.",
-                "Syntax error: ',' or ')' expected after [constr:operconstr"
+                "Syntax error: ',' or ')' expected after"
             )
             for t in (1,2,3)
         ]
