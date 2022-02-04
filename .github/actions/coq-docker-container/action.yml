@@ -1,0 +1,7 @@
+name: 'Run Coq Docker container'
+
+description: 'Run Coq Docker container'
+
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
