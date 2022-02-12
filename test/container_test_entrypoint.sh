@@ -3,6 +3,9 @@
 export OPAMROOT=/home/coq/.opam
 eval $(opam env)
 
+sudo apt-get update
+sudo apt-get install -y python3-pip
+
 python3 --version
 coqtop --version
 
