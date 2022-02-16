@@ -8,35 +8,12 @@ on:
     - cron: '0 12 * * 1' # At 12:00 on Monday.
 
 jobs:
-  build:
-    name: Build kernel packages
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-
-      - uses: conda-incubator/setup-miniconda@v2
-        with:
-          auto-update-conda: true
-          python-version: "3.10"
-
-      - name: Install build dependencies
-        shell: bash -l {0}
-        run: |
-          pip install --upgrade pip setuptools wheel
-
-      - name: Build kernel packages
-        shell: bash -l {0}
-        run: |
-          python setup.py sdist bdist_wheel
-
-      - uses: actions/upload-artifact@v2
-        with:
-          name: packages
-          path: dist/*
+  package:
+    uses: ./.github/workflows/package.yml
 
   test-docker:
     name: Test against Coq release (Docker)
-    needs: build
+    needs: package
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -63,10 +40,9 @@ jobs:
           options: -v ${{ github.workspace }}:/github/workspace
           run: /github/workspace/test/container_test_entrypoint.sh
 
-
   test-conda:
     name: Test against Coq release (Conda)
-    needs: build
+    needs: package
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
