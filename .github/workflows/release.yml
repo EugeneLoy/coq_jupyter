@@ -1,0 +1,44 @@
+name: Publish release
+
+on:
+  push:
+    tags:
+    - 'v*'
+
+jobs:
+  ci-tests:
+    uses: ./.github/workflows/ci-tests.yml
+
+  release-github:
+    name: Create Github release
+    needs: ci-tests
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v2
+        with:
+          name: packages
+          path: dist
+
+      - uses: ncipollo/release-action@v1
+        with:
+          artifacts: "dist/*"
+          omitBody: true
+          token: ${{ secrets.GITHUB_TOKEN }}
+          prerelease: false
+          draft: false
+
+  release-pypi:
+    name: Create PyPI release
+    needs: ci-tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v2
+        with:
+          name: packages
+          path: dist
+
+      - uses: pypa/gh-action-pypi-publish@master
+        with:
+          password: ${{ secrets.PYPI_API_TOKEN }}
