@@ -15,12 +15,15 @@ Make sure that CoqIDE (8.6 or newer) is installed and `coqidetop` or `coqidetop.
 All commands are run from the top level repo of this folder - where the `Makefile` lives.
 
 Install from PyPi:
+
     make
 
 Install from locally checked out source code:
+
     make install-local
 
 Uninstall:
+
     make uninstall
 
 ### Step-by-Step Install
