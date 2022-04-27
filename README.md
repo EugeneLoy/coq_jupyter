@@ -6,12 +6,36 @@ You can try it [online in Binder](https://mybinder.org/v2/gh/EugeneLoy/coq_jupyt
 
 ## Installation
 
-Make sure that CoqIDE (8.6 or newer) is installed and `coqidetop` or `coqidetop.opt` (`coqtop` for Coq versions before 8.9.0) is in your `PATH`.
+### Prerequisites
 
-After that install using `pip`:
+Make sure that CoqIDE (8.6 or newer) is installed and `coqidetop` or `coqidetop.opt` (`coqtop` for Coq versions before 8.9.0) is in your `PATH`. Also, make sure the `python` command is recognized on your machine. If not you can set up an alias for it e.g. python-is-python3 on Ubuntu.
+
+### Install with MAKE
+
+All commands are run from the top level repo of this folder - where the `Makefile` lives.
+
+Install from PyPi:
+
+    make
+
+Install from locally checked out source code:
+
+    make install-local
+
+Uninstall:
+
+    make uninstall
+
+### Step-by-Step Install
+
+Install with `pip`:
 
     pip install coq-jupyter
     python -m coq_jupyter.install
+
+Uninstall with `pip`:
+    jupyter kernelspec uninstall coq
+    pip uninstall coq-jupyter
 
 Alternatively, use Conda to install both `coqidetop` and `coq_jupyter`. For this,
 install Conda (either Anaconda, Miniconda, Minimamba) and do:
