@@ -34,6 +34,7 @@ Install with `pip`:
     python -m coq_jupyter.install
 
 Uninstall with `pip`:
+
     jupyter kernelspec uninstall coq
     pip uninstall coq-jupyter
 
