@@ -25,6 +25,9 @@ jobs:
           - "8.13"
           - "8.14"
           - "8.15"
+          - "8.16"
+          - "8.17"
+          - "8.18"
           - "latest"
     steps:
       - uses: actions/checkout@v2
@@ -40,50 +43,3 @@ jobs:
           options: -v ${{ github.workspace }}:/github/workspace
           run: /github/workspace/test/container_test_entrypoint.sh
 
-  test-conda:
-    name: Test against Coq release (Conda)
-    needs: package
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        coq-package:
-          - coq=8.9.1
-          - coq=8.10.1
-          - coq=8.11.2
-          - coq=8.12.2
-          - coq
-    steps:
-      - uses: actions/checkout@v2
-
-      - uses: actions/download-artifact@v2
-        with:
-          name: packages
-          path: dist
-
-      - uses: conda-incubator/setup-miniconda@v2
-        with:
-          auto-update-conda: true
-          python-version: "3.10"
-
-      - name: Install Coq
-        shell: bash -l {0}
-        run: |
-          conda install -c conda-forge ${{ matrix.coq-package }}
-
-      - name: Install kernel
-        shell: bash -l {0}
-        run: |
-          pip install --user --upgrade --force-reinstall dist/coq_jupyter-*.tar.gz 'jupyter_client<=6.1.12' 'jupyter_kernel_test<=0.3'
-          python -m coq_jupyter.install
-
-      - name: Print versions
-        shell: bash -l {0}
-        run: |
-          python --version
-          coqtop --version
-
-      - name: Run tests
-        shell: bash -l {0}
-        run: |
-          python test/kernel_test.py -v
