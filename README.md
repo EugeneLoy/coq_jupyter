@@ -48,6 +48,8 @@ By default, running cell will rollback any code that was executed in that cell b
 
 Manual cell rollback is also available using `Rollback cell` button (at the bottom of executed cell) or shortcut (`Ctrl+Backspace`).
 
+![Backtracking screenshot](screenshot.png)
+
 ## coqtop arguments
 
 Use `--coqtop-args` to supply additional arguments to `coqidetop`/`coqidetop.opt`/`coqtop` when installing kernel. In this case you might also want to set custom kernel name/display name using `--kernel-name`/`--kernel-display-name`.
