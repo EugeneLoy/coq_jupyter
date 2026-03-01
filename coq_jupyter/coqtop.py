@@ -4,7 +4,6 @@ import pexpect
 import re
 import xml.etree.ElementTree as ET
 
-from future.utils import raise_with_traceback
 from collections import deque
 from subprocess import check_output
 
@@ -70,7 +69,7 @@ class Coqtop:
             self.tip = reply.find("./state_id").get("val")
 
         except Exception as e:
-            raise_with_traceback(CoqtopError("Cause: {}".format(repr(e))))
+            raise CoqtopError("Cause: {}".format(repr(e))).with_traceback()
 
     def eval(self, code):
         try:
@@ -143,7 +142,7 @@ class Coqtop:
             return code_evaluated, outputs
 
         except Exception as e:
-            raise_with_traceback(CoqtopError("Cause: {}".format(repr(e))))
+            raise CoqtopError("Cause: {}".format(repr(e))).with_traceback()
 
     def roll_back_to(self, state_id):
         self._execute_command(self._build_edit_at_command(state_id))
